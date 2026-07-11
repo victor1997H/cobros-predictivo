@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
@@ -10,55 +9,46 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   imports: [
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
     MatCardModule,
-    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
   ],
-  templateUrl: './login.html',
-  styleUrl: './login.scss',
+  templateUrl: './register.html',
+  styleUrl: './register.scss',
 })
-export class Login {
+export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly loginForm = this.formBuilder.nonNullable.group({
+  readonly registerForm = this.formBuilder.nonNullable.group({
+    nombre: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]],
-    remember: [true],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   isLoading = false;
   errorMessage = '';
 
   onSubmit(): void {
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
       return;
     }
 
     this.isLoading = true;
     this.errorMessage = '';
 
-    const { email, password } = this.loginForm.getRawValue();
-
-    this.authService.login({ email, password }).subscribe({
+    this.authService.register(this.registerForm.getRawValue()).subscribe({
       next: (response) => {
         console.log(response);
         this.isLoading = false;
-
-        if (response.success) {
-          void this.router.navigate(['/dashboard']);
-          return;
-        }
-
-        this.errorMessage = response.message;
+        void this.router.navigate(['/login']);
       },
       error: (error: unknown) => {
         console.error(error);
@@ -88,6 +78,6 @@ export class Login {
       }
     }
 
-    return 'No se pudo conectar con el servidor.';
+    return 'No se pudo registrar el usuario.';
   }
 }

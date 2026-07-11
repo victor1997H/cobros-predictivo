@@ -18,15 +18,16 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the application layout', async () => {
+  it('should render only the root router outlet', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('.brand h2')?.textContent).toContain(
-      'CobrosPredictivo',
-    );
+    expect(compiled.querySelector('router-outlet')).toBeTruthy();
+    expect(compiled.querySelector('app-sidebar')).toBeFalsy();
+    expect(compiled.querySelector('app-navbar')).toBeFalsy();
+    expect(compiled.querySelector('app-footer')).toBeFalsy();
   });
 });

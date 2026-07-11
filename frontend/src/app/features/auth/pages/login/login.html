@@ -1,57 +1,131 @@
 <section class="login-page">
-  <mat-card class="login-card">
-    <mat-card-header>
-      <mat-card-title>Iniciar sesion</mat-card-title>
-      <mat-card-subtitle>Sistema de Gestion de Cobros Predictivo</mat-card-subtitle>
-    </mat-card-header>
+  <mat-card class="login-shell">
+    <aside class="brand-panel">
+      <header class="brand-header">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M8.2 7.6a4.4 4.4 0 0 1 8.5-.6 3.8 3.8 0 0 1 .2 7.5h-.5a4.7 4.7 0 0 1-8.8.2 3.9 3.9 0 0 1 .6-7.1Z" />
+            <path d="M12 5.2v13.6M9.5 8.5h5M8.9 11.7h6.2M9.7 15h4.6" />
+          </svg>
+        </div>
 
-    <mat-card-content>
-      <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input
-            matInput
-            type="email"
-            formControlName="email"
-            autocomplete="email"
-          />
+        <p>CobrosPredictivo</p>
+      </header>
 
-          @if (loginForm.controls.email.hasError('required')) {
-            <mat-error>El email es obligatorio</mat-error>
+      <section class="brand-copy">
+        <h1>Gestión Inteligente de Cartera con IA &amp; N8N</h1>
+        <p>
+          Automatiza tus cobros, predice riesgos de impago y orquesta
+          notificaciones multicanal con la potencia de NestJS y N8N en una
+          interfaz armonizada.
+        </p>
+      </section>
+
+      <footer class="brand-footer">
+        <span>Versión 2.5 (Cool Mountain UI)</span>
+        <span class="status"><i></i> N8N Conectado</span>
+      </footer>
+    </aside>
+
+    <section class="form-panel">
+      <div class="form-content">
+        <header class="form-header">
+          <h2>Iniciar Sesión</h2>
+          <p>Introduce tus credenciales de administrador de cartera.</p>
+        </header>
+
+        <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <label class="field-group">
+            <span>USUARIO / EMAIL</span>
+            <div class="field-control">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 7.5h16v9H4z" />
+                <path d="m4 8 8 5.5L20 8" />
+              </svg>
+              <input
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="admin@cobros.com"
+              />
+            </div>
+          </label>
+
+          @if (
+            loginForm.controls.email.touched &&
+            loginForm.controls.email.hasError('required')
+          ) {
+            <p class="field-error">El email es obligatorio</p>
           }
 
-          @if (loginForm.controls.email.hasError('email')) {
-            <mat-error>Ingresa un email valido</mat-error>
+          @if (
+            loginForm.controls.email.touched &&
+            loginForm.controls.email.hasError('email')
+          ) {
+            <p class="field-error">Ingresa un email válido</p>
           }
-        </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Password</mat-label>
-          <input
-            matInput
-            type="password"
-            formControlName="password"
-            autocomplete="current-password"
-          />
+          <label class="field-group">
+            <span class="password-label">
+              CONTRASEÑA
+              <a href="#" tabindex="-1">¿Olvidó su contraseña?</a>
+            </span>
+            <div class="field-control">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <rect x="6" y="10" width="12" height="9" rx="2" />
+                <path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" />
+              </svg>
+              <input
+                type="password"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="••••••••••"
+              />
+              <svg class="eye-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z" />
+                <circle cx="12" cy="12" r="2.4" />
+                <path d="m4 4 16 16" />
+              </svg>
+            </div>
+          </label>
 
-          @if (loginForm.controls.password.hasError('required')) {
-            <mat-error>El password es obligatorio</mat-error>
+          @if (
+            loginForm.controls.password.touched &&
+            loginForm.controls.password.hasError('required')
+          ) {
+            <p class="field-error">La contraseña es obligatoria</p>
           }
-        </mat-form-field>
 
-        @if (errorMessage) {
-          <p class="login-error">{{ errorMessage }}</p>
-        }
+          <mat-checkbox formControlName="remember" class="remember-checkbox">
+            Recordarme en este ordenador
+          </mat-checkbox>
 
-        <button
-          mat-flat-button
-          color="primary"
-          type="submit"
-          [disabled]="isLoading"
-        >
-          {{ isLoading ? 'Ingresando...' : 'Ingresar' }}
-        </button>
-      </form>
-    </mat-card-content>
+          @if (errorMessage) {
+            <p class="login-error">{{ errorMessage }}</p>
+          }
+
+          <div class="actions">
+            <button
+              mat-flat-button
+              class="primary-action"
+              type="submit"
+              [disabled]="isLoading"
+            >
+              <span>{{ isLoading ? 'INGRESANDO...' : 'INGRESAR' }}</span>
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M15 8l4 4-4 4" />
+                <path d="M19 12H9" />
+                <path d="M11 5H6v14h5" />
+              </svg>
+            </button>
+          </div>
+
+          <p class="register-link">
+            ¿No tienes una cuenta de operador?
+            <a routerLink="/register">Regístrate gratis</a>
+          </p>
+        </form>
+      </div>
+    </section>
   </mat-card>
 </section>
