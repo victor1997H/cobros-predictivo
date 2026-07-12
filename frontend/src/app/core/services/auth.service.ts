@@ -30,7 +30,18 @@ export interface AuthResponse {
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/auth';
+
+  /**
+   * Desarrollo:
+   * http://localhost:3000/auth
+   *
+   * Producción:
+   * https://backsistemacobros.byronrm.com/auth
+   */
+  private readonly apiUrl =
+    window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/auth'
+      : 'https://backsistemacobros.byronrm.com/auth';
 
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data);
