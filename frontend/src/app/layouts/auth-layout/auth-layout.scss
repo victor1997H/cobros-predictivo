@@ -4,39 +4,9 @@
 }
 
 .auth-layout {
-  position: relative;
   min-height: 100vh;
   display: grid;
-  overflow: hidden;
-  background: linear-gradient(180deg, #3f7695 0%, #f4f8fa 100%);
-}
-
-.auth-layout::before,
-.auth-layout::after {
-  position: absolute;
-  right: -14vw;
-  left: -10vw;
-  content: '';
-  pointer-events: none;
-}
-
-.auth-layout::before {
-  top: 0;
-  height: 44vh;
   background:
-    linear-gradient(155deg, rgba(98, 152, 188, 0.82) 0 45%, transparent 45%),
-    linear-gradient(335deg, transparent 0 58%, rgba(20, 67, 97, 0.94) 58%);
-}
-
-.auth-layout::after {
-  bottom: 0;
-  height: 46vh;
-  background:
-    linear-gradient(28deg, #ffffff 0 38%, transparent 38%),
-    linear-gradient(152deg, transparent 0 70%, rgba(7, 28, 52, 0.9) 70%);
-}
-
-.auth-layout > router-outlet {
-  position: relative;
-  z-index: 1;
+    radial-gradient(circle at 25% 12%, rgba(37, 99, 235, 0.14), transparent 28%),
+    linear-gradient(180deg, #eef6ff 0%, #f8fbff 100%);
 }

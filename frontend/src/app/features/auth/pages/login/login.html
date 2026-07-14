@@ -4,16 +4,17 @@
       <header class="brand-header">
         <div class="brand-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M8.2 7.6a4.4 4.4 0 0 1 8.5-.6 3.8 3.8 0 0 1 .2 7.5h-.5a4.7 4.7 0 0 1-8.8.2 3.9 3.9 0 0 1 .6-7.1Z" />
-            <path d="M12 5.2v13.6M9.5 8.5h5M8.9 11.7h6.2M9.7 15h4.6" />
+            <circle cx="12" cy="12" r="8" />
+            <path d="M12 7v10M8.8 10.2 12 7l3.2 3.2M8.8 13.8 12 17l3.2-3.2" />
           </svg>
         </div>
 
-        <p>CobrosPredictivo</p>
+        <p>Cobros<span>Predictivo</span></p>
       </header>
 
       <section class="brand-copy">
-        <h1>Gestión Inteligente de Cartera con IA &amp; N8N</h1>
+        <h1>Gestión Inteligente de Cartera con <span>IA &amp; N8N</span></h1>
+        <i aria-hidden="true"></i>
         <p>
           Automatiza tus cobros, predice riesgos de impago y orquesta
           notificaciones multicanal con la potencia de NestJS y N8N en una
@@ -21,14 +22,53 @@
         </p>
       </section>
 
-      <footer class="brand-footer">
-        <span>Versión 2.5 (Cool Mountain UI)</span>
-        <span class="status"><i></i> N8N Conectado</span>
-      </footer>
+      <section class="automation-graphic" aria-hidden="true">
+        <div class="brain-card">
+          <svg viewBox="0 0 72 72" focusable="false">
+            <path d="M27 18a10 10 0 0 0-10 10v16a10 10 0 0 0 10 10h18a10 10 0 0 0 10-10V28a10 10 0 0 0-10-10H27Z" />
+            <path d="M32 22v28M40 22v28M24 32h24M24 40h24" />
+            <path d="M28 26a6 6 0 0 0-6 6M44 26a6 6 0 0 1 6 6M28 46a6 6 0 0 1-6-6M44 46a6 6 0 0 0 6-6" />
+          </svg>
+        </div>
+
+        <div class="node-lines">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="service-icons">
+          <div>
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 7h16v11H4z" />
+              <path d="m4 8 8 6 8-6" />
+            </svg>
+          </div>
+          <div>
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M6 17h12l-1.4-2.1V11a4.6 4.6 0 0 0-9.2 0v3.9L6 17Z" />
+              <path d="M10 19h4" />
+            </svg>
+          </div>
+          <div>
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M5 6h14v10H9l-4 3V6Z" />
+              <path d="M9 10h.1M12 10h.1M15 10h.1" />
+            </svg>
+          </div>
+        </div>
+      </section>
     </aside>
 
     <section class="form-panel">
       <div class="form-content">
+        <div class="lock-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <rect x="6" y="10" width="12" height="9" rx="2" />
+            <path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" />
+          </svg>
+        </div>
+
         <header class="form-header">
           <h2>Iniciar Sesión</h2>
           <p>Introduce tus credenciales de administrador de cartera.</p>
@@ -46,7 +86,7 @@
                 type="email"
                 formControlName="email"
                 autocomplete="email"
-                placeholder="admin@cobros.com"
+                placeholder="vdy.hualpa@yavirac.edu.ec"
               />
             </div>
           </label>
@@ -79,7 +119,7 @@
                 type="password"
                 formControlName="password"
                 autocomplete="current-password"
-                placeholder="••••••••••"
+                placeholder="•••••••"
               />
               <svg class="eye-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                 <path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z" />
@@ -104,21 +144,19 @@
             <p class="login-error">{{ errorMessage }}</p>
           }
 
-          <div class="actions">
-            <button
-              mat-flat-button
-              class="primary-action"
-              type="submit"
-              [disabled]="isLoading"
-            >
-              <span>{{ isLoading ? 'INGRESANDO...' : 'INGRESAR' }}</span>
-              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                <path d="M15 8l4 4-4 4" />
-                <path d="M19 12H9" />
-                <path d="M11 5H6v14h5" />
-              </svg>
-            </button>
-          </div>
+          <button
+            mat-flat-button
+            class="primary-action"
+            type="submit"
+            [disabled]="isLoading"
+          >
+            <span>{{ isLoading ? 'INGRESANDO...' : 'INGRESAR' }}</span>
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M15 8l4 4-4 4" />
+              <path d="M19 12H9" />
+              <path d="M11 5H6v14h5" />
+            </svg>
+          </button>
 
           <p class="register-link">
             ¿No tienes una cuenta de operador?
