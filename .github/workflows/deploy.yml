@@ -81,7 +81,8 @@ jobs:
               -u "${{ github.actor }}" \
               --password-stdin
 
-            docker compose up -d --build
+            docker compose pull backend frontend
+            docker compose up -d
 
             docker image prune -f
 

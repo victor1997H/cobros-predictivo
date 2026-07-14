@@ -27,9 +27,8 @@ services:
 
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/victor1997h/cobros-predictivo-backend:latest
+    pull_policy: always
 
     container_name: cobros_backend
     restart: unless-stopped
@@ -62,9 +61,8 @@ services:
 
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/victor1997h/cobros-predictivo-frontend:latest
+    pull_policy: always
 
     container_name: cobros_frontend
     restart: unless-stopped
