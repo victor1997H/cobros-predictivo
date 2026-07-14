@@ -26,7 +26,7 @@ export class Cliente {
   @Column({ length: 30 })
   telefono!: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   direccion!: string | null;
 
   @Column({ default: true })
