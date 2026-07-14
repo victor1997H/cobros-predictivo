@@ -1,83 +1,58 @@
 <aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">CP</div>
 
-    <div class="brand">
-
-        <div class="brand-icon">
-            CP
-        </div>
-
-        <div>
-
-            <h2>CobrosPredictivo</h2>
-
-            <span>Gestión de Cobros</span>
-
-        </div>
-
+    <div>
+      <h2>CobrosPredictivo</h2>
+      <span>Gesti&oacute;n de Cobros</span>
     </div>
+  </div>
 
-    <nav class="menu">
+  <nav class="menu">
+    <a routerLink="/dashboard" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">DB</span>
+      Dashboard
+    </a>
 
-        <a
-            routerLink="/dashboard"
-            routerLinkActive="active"
-            class="menu-item">
+    <a routerLink="/clientes" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">CL</span>
+      Clientes
+    </a>
 
-            📊 Dashboard
+    <a routerLink="/cobros" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">CO</span>
+      Cobros
+    </a>
 
-        </a>
+    <a routerLink="/pagos" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">PA</span>
+      Pagos
+    </a>
 
-        <a
-            routerLink="/clientes"
-            routerLinkActive="active"
-            class="menu-item">
+    <a routerLink="/reportes" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">RE</span>
+      Reportes
+    </a>
 
-            👥 Clientes
+    <a routerLink="/configuracion" routerLinkActive="active" class="menu-item">
+      <span class="menu-icon">CF</span>
+      Configuraci&oacute;n
+    </a>
+  </nav>
 
-        </a>
+  @if (currentUser$ | async; as currentUser) {
+    <section class="sidebar-user">
+      <div class="sidebar-avatar">{{ getInitials(currentUser) }}</div>
+      <div>
+        <strong>{{ currentUser.nombre }}</strong>
+        <span>{{ currentUser.email }}</span>
+      </div>
+    </section>
+  }
 
-        <a
-            routerLink="/cobros"
-            routerLinkActive="active"
-            class="menu-item">
+  <button class="sidebar-logout" type="button" (click)="logout()">
+    Cerrar sesi&oacute;n
+  </button>
 
-            💰 Cobros
-
-        </a>
-
-        <a
-            routerLink="/pagos"
-            routerLinkActive="active"
-            class="menu-item">
-
-            💳 Pagos
-
-        </a>
-
-        <a
-            routerLink="/reportes"
-            routerLinkActive="active"
-            class="menu-item">
-
-            📈 Reportes
-
-        </a>
-
-        <a
-            routerLink="/configuracion"
-            routerLinkActive="active"
-            class="menu-item">
-
-            ⚙ Configuración
-
-        </a>
-
-    </nav>
-
-    <div class="sidebar-footer">
-
-        Versión 1.0.0
-
-    </div>
-
+  <div class="sidebar-footer">Versi&oacute;n 1.0.0</div>
 </aside>

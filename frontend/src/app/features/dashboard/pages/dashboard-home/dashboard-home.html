@@ -1,115 +1,82 @@
-<h2 class="page-title">
-    Dashboard General
-</h2>
+<section class="dashboard-page">
+  @if (currentUser$ | async; as currentUser) {
+    <header class="page-header">
+      <div>
+        <h2>Bienvenido, {{ currentUser.nombre }}</h2>
+        <p>{{ currentUser.email }}</p>
+      </div>
+    </header>
+  }
 
-<div class="cards">
+  @if (errorMessage) {
+    <p class="alert error">{{ errorMessage }}</p>
+  }
 
+  <div class="cards">
     <div class="card">
-
-        <span>Total Clientes</span>
-
-        <h1>325</h1>
-
+      <span>Total clientes</span>
+      <h1>{{ totalClientes }}</h1>
     </div>
 
     <div class="card">
-
-        <span>Cobros Pendientes</span>
-
-        <h1>$12.450</h1>
-
-    </div>
-
-    <div class="card">
-
-        <span>Pagos Recibidos</span>
-
-        <h1>$8.950</h1>
-
+      <span>Clientes activos</span>
+      <h1>{{ clientesActivos }}</h1>
     </div>
 
     <div class="card danger">
-
-        <span>Morosos</span>
-
-        <h1>18</h1>
-
+      <span>Clientes inactivos</span>
+      <h1>{{ clientesInactivos }}</h1>
     </div>
 
-</div>
+    <div class="card">
+      <span>Ultimos registros</span>
+      <h1>{{ ultimosClientes.length }}</h1>
+    </div>
+  </div>
 
-<div class="content-grid">
-
+  <div class="content-grid">
     <div class="table-card">
+      <h3>Ultimos clientes</h3>
 
-        <h3>Últimos Clientes</h3>
-
+      @if (isLoading) {
+        <p class="empty">Cargando informacion...</p>
+      } @else if (ultimosClientes.length === 0) {
+        <p class="empty">No existen clientes registrados.</p>
+      } @else {
         <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Email</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
 
-            <thead>
-
-                <tr>
-
-                    <th>Cliente</th>
-
-                    <th>Estado</th>
-
-                    <th>Saldo</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                <tr>
-
-                    <td>Carlos Mendoza</td>
-
-                    <td>Activo</td>
-
-                    <td>$1200</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>María Auxiliadora</td>
-
-                    <td>Moroso</td>
-
-                    <td>$980</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>Esteban Paredes</td>
-
-                    <td>Activo</td>
-
-                    <td>$350</td>
-
-                </tr>
-
-            </tbody>
-
+          <tbody>
+            @for (cliente of ultimosClientes; track cliente.id) {
+              <tr>
+                <td>{{ fullName(cliente) }}</td>
+                <td>{{ cliente.email }}</td>
+                <td>
+                  <span class="status" [class.inactive]="!cliente.estado">
+                    {{ cliente.estado ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
         </table>
-
+      }
     </div>
 
     <div class="activity-card">
+      <h3>Sesion actual</h3>
 
-        <h3>Actividad</h3>
-
-        <p>✔ Cliente registrado</p>
-
-        <p>✔ Pago recibido</p>
-
-        <p>✔ Recordatorio enviado</p>
-
-        <p>✔ IA clasificó riesgo</p>
-
+      @if (currentUser$ | async; as currentUser) {
+        <p><strong>Usuario:</strong> {{ currentUser.nombre }}</p>
+        <p><strong>Email:</strong> {{ currentUser.email }}</p>
+        <p><strong>Estado:</strong> Autenticado</p>
+      }
     </div>
-
-</div>
+  </div>
+</section>

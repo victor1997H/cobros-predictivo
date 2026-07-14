@@ -6,6 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -46,26 +47,33 @@ export class Login {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const { email, password } = this.loginForm.getRawValue();
+    const { email, password, remember } = this.loginForm.getRawValue();
 
-    this.authService.login({ email, password }).subscribe({
-      next: (response) => {
-        console.log(response);
-        this.isLoading = false;
+    this.authService
+      .login({ email, password })
+      .pipe(finalize(() => (this.isLoading = false)))
+      .subscribe({
+        next: (response) => {
+          console.log(response);
 
-        if (response.success) {
+          if (!response.success) {
+            this.errorMessage = response.message;
+            return;
+          }
+
+          if (!response.usuario) {
+            this.errorMessage = 'No se recibio el usuario autenticado.';
+            return;
+          }
+
+          this.authService.setCurrentUser(response.usuario, remember);
           void this.router.navigate(['/dashboard']);
-          return;
-        }
-
-        this.errorMessage = response.message;
-      },
-      error: (error: unknown) => {
-        console.error(error);
-        this.isLoading = false;
-        this.errorMessage = this.resolveErrorMessage(error);
-      },
-    });
+        },
+        error: (error: unknown) => {
+          console.error(error);
+          this.errorMessage = this.resolveErrorMessage(error);
+        },
+      });
   }
 
   private resolveErrorMessage(error: unknown): string {

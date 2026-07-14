@@ -34,6 +34,27 @@
   background: #edf2f7;
   cursor: pointer;
   font-size: 18px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: #2f80ed;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+}
+
+.logout-button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #102a43;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
 }
 
 .user-info {
@@ -67,4 +88,19 @@
   background: #2f80ed;
   color: #ffffff;
   font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .navbar-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 }

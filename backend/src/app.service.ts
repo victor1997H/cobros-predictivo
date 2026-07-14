@@ -22,9 +22,9 @@ export class AppService {
   getHello(): AppStatusResponse {
     return {
       success: true,
-      application: 'Sistema de Gestión de Cobros Predictivo',
+      application: 'Sistema de Gesti\u00f3n de Cobros Predictivo',
       description:
-        'API REST para la gestión inteligente de cartera y automatización de cobros.',
+        'API REST para la gesti\u00f3n inteligente de cartera y automatizaci\u00f3n de cobros.',
       framework: 'NestJS',
       database: 'PostgreSQL',
       status: 'Operativo',

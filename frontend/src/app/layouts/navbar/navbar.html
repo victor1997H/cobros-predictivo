@@ -4,18 +4,27 @@
     <p>Resumen general del sistema de cobros</p>
   </div>
 
-  <div class="navbar-actions">
-    <button class="notification-button" type="button">
-      🔔
-    </button>
+  @if (currentUser$ | async; as currentUser) {
+    <div class="navbar-actions">
+      <button class="notification-button" type="button" aria-label="Notificaciones">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M6 17h12l-1.4-2.1V11a4.6 4.6 0 0 0-9.2 0v3.9L6 17Z" />
+          <path d="M10 19h4" />
+        </svg>
+      </button>
 
-    <div class="user-info">
-      <div class="avatar">VH</div>
+      <div class="user-info">
+        <div class="avatar">{{ getInitials(currentUser) }}</div>
 
-      <div>
-        <strong>Victor Hualpa</strong>
-        <span>Administrador</span>
+        <div>
+          <strong>{{ currentUser.nombre }}</strong>
+          <span>{{ currentUser.email }}</span>
+        </div>
       </div>
+
+      <button class="logout-button" type="button" (click)="logout()">
+        Salir
+      </button>
     </div>
-  </div>
+  }
 </header>

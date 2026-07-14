@@ -15,8 +15,18 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return the application status response', () => {
+      const response = appController.getHello();
+
+      expect(response.success).toBe(true);
+      expect(response.application).toBe(
+        'Sistema de Gesti\u00f3n de Cobros Predictivo',
+      );
+      expect(response.endpoints).toEqual({
+        login: '/auth/login',
+        register: '/auth/register',
+      });
+      expect(response.server_time).toBeDefined();
     });
   });
 });

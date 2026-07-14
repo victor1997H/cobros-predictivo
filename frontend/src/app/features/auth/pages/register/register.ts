@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -44,18 +45,25 @@ export class Register {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.register(this.registerForm.getRawValue()).subscribe({
-      next: (response) => {
-        console.log(response);
-        this.isLoading = false;
-        void this.router.navigate(['/login']);
-      },
-      error: (error: unknown) => {
-        console.error(error);
-        this.isLoading = false;
-        this.errorMessage = this.resolveErrorMessage(error);
-      },
-    });
+    this.authService
+      .register(this.registerForm.getRawValue())
+      .pipe(finalize(() => (this.isLoading = false)))
+      .subscribe({
+        next: (response) => {
+          console.log(response);
+
+          if (!response.success) {
+            this.errorMessage = response.message;
+            return;
+          }
+
+          void this.router.navigate(['/login']);
+        },
+        error: (error: unknown) => {
+          console.error(error);
+          this.errorMessage = this.resolveErrorMessage(error);
+        },
+      });
   }
 
   private resolveErrorMessage(error: unknown): string {
