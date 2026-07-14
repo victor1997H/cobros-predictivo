@@ -3,14 +3,15 @@ services:
     image: postgres:17-alpine
     container_name: cobros_postgres
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test:
         [
@@ -20,15 +21,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
     networks:
       - cobros_network
+
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+
     container_name: cobros_backend
     restart: unless-stopped
+
     environment:
       PORT: 3000
       DB_HOST: postgres
@@ -36,48 +41,91 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "3000:3000"
+
     depends_on:
       postgres:
         condition: service_healthy
+
     networks:
       - cobros_network
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.cobros-backend.rule=Host(`backsistemacobros.byronrm.com`)"
+      - "traefik.http.routers.cobros-backend.entrypoints=websecure"
+      - "traefik.http.routers.cobros-backend.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.cobros-backend.loadbalancer.server.port=3000"
+
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+
     container_name: cobros_frontend
     restart: unless-stopped
-    ports:
-      - "4200:80"
+
     depends_on:
       - backend
+
     networks:
       - cobros_network
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.cobros-frontend.rule=Host(`sistemacobros.byronrm.com`)"
+      - "traefik.http.routers.cobros-frontend.entrypoints=websecure"
+      - "traefik.http.routers.cobros-frontend.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.cobros-frontend.loadbalancer.server.port=80"
+
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: cobros_pgadmin
     restart: unless-stopped
+
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-    ports:
-      - "5050:80"
+
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
     depends_on:
       postgres:
         condition: service_healthy
+
     networks:
       - cobros_network
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.cobros-pgadmin.rule=Host(`pgsistemacobros.byronrm.com`)"
+      - "traefik.http.routers.cobros-pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.cobros-pgadmin.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.cobros-pgadmin.loadbalancer.server.port=80"
+
 
 volumes:
   postgres_data:
   pgadmin_data:
 
+
 networks:
   cobros_network:
     driver: bridge
+
+  proxy:
+    external: true
