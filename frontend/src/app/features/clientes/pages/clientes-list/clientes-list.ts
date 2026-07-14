@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
-import { finalize } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 
 import { ClienteService } from '../../../../core/services/cliente.service';
 import { ClienteForm } from '../../components/cliente-form/cliente-form';
@@ -70,6 +70,10 @@ export class ClientesList implements OnInit {
   }
 
   saveCliente(payload: ClientePayload): void {
+    if (this.isSaving) {
+      return;
+    }
+
     this.isSaving = true;
     this.clearMessages();
 
@@ -77,17 +81,20 @@ export class ClientesList implements OnInit {
       ? this.clienteService.update(this.selectedCliente.id, payload)
       : this.clienteService.create(payload);
 
-    request.pipe(finalize(() => (this.isSaving = false))).subscribe({
-      next: (response) => {
-        this.feedbackMessage = response.message;
-        this.showForm = false;
-        this.selectedCliente = null;
-        this.loadClientes();
-      },
-      error: (error: unknown) => {
-        this.errorMessage = this.resolveErrorMessage(error);
-      },
-    });
+    request
+      .pipe(timeout(15000), finalize(() => (this.isSaving = false)))
+      .subscribe({
+        next: (response) => {
+          this.feedbackMessage = response.message;
+          this.syncClienteInList(response.cliente);
+          this.showForm = false;
+          this.selectedCliente = null;
+          this.loadClientes();
+        },
+        error: (error: unknown) => {
+          this.errorMessage = this.resolveErrorMessage(error);
+        },
+      });
   }
 
   deleteCliente(cliente: Cliente): void {
@@ -127,7 +134,31 @@ export class ClientesList implements OnInit {
     this.errorMessage = '';
   }
 
+  private syncClienteInList(cliente: Cliente): void {
+    const clienteIndex = this.clientes.findIndex(
+      (item) => item.id === cliente.id,
+    );
+
+    if (clienteIndex >= 0) {
+      this.clientes = this.clientes.map((item) =>
+        item.id === cliente.id ? cliente : item,
+      );
+      return;
+    }
+
+    this.clientes = [cliente, ...this.clientes];
+  }
+
   private resolveErrorMessage(error: unknown): string {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'name' in error &&
+      error.name === 'TimeoutError'
+    ) {
+      return 'La solicitud tardo demasiado. Verifica la conexion e intenta nuevamente.';
+    }
+
     if (
       typeof error === 'object' &&
       error !== null &&

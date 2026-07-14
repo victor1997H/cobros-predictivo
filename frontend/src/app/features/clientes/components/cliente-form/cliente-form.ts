@@ -4,6 +4,7 @@ import {
   Input,
   OnChanges,
   Output,
+  SimpleChanges,
   inject,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -46,7 +47,11 @@ export class ClienteForm implements OnChanges {
     estado: [true],
   });
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['cliente']) {
+      return;
+    }
+
     if (this.cliente) {
       this.form.reset({
         nombres: this.cliente.nombres,
@@ -57,6 +62,7 @@ export class ClienteForm implements OnChanges {
         direccion: this.cliente.direccion ?? '',
         estado: this.cliente.estado,
       });
+      this.markFormAsClean();
       return;
     }
 
@@ -69,9 +75,14 @@ export class ClienteForm implements OnChanges {
       direccion: '',
       estado: true,
     });
+    this.markFormAsClean();
   }
 
   submit(): void {
+    if (this.isSaving) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -83,5 +94,10 @@ export class ClienteForm implements OnChanges {
       ...value,
       direccion: value.direccion.trim() || null,
     });
+  }
+
+  private markFormAsClean(): void {
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 }
