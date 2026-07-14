@@ -1,0 +1,73 @@
+name: Build y Deploy Cobros Predictivo
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Compilar y probar backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+          npm test -- --runInBand
+
+      - name: Compilar y probar frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm test -- --watch=false
+
+      - name: Probar conexión SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            echo "VPS conectado correctamente"
+            hostname
+            whoami
+            docker --version
+            docker compose version
+
+      - name: Desplegar en VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            set -e
+
+            cd /opt/docker/apps/cobros-predictivo
+
+            git fetch origin
+            git reset --hard origin/main
+
+            docker compose up -d --build
+            docker image prune -f
+            docker compose ps
