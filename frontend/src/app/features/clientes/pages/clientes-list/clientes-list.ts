@@ -1,8 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
-import { finalize, timeout } from 'rxjs';
+import { finalize } from 'rxjs';
 
 import { ClienteService } from '../../../../core/services/cliente.service';
 import { ClienteForm } from '../../components/cliente-form/cliente-form';
@@ -14,6 +20,7 @@ import { Cliente, ClientePayload } from '../../models/cliente.model';
   imports: [MatButtonModule, MatCardModule, MatTableModule, ClienteForm],
   templateUrl: './clientes-list.html',
   styleUrl: './clientes-list.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClientesList implements OnInit {
   private readonly clienteService = inject(ClienteService);
@@ -28,73 +35,75 @@ export class ClientesList implements OnInit {
     'acciones',
   ];
 
-  clientes: Cliente[] = [];
-  selectedCliente: Cliente | null = null;
-  showForm = false;
-  isLoading = false;
-  isSaving = false;
-  feedbackMessage = '';
-  errorMessage = '';
+  readonly clientes = signal<Cliente[]>([]);
+  readonly selectedCliente = signal<Cliente | null>(null);
+  readonly showForm = signal(false);
+  readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
+  readonly feedbackMessage = signal('');
+  readonly errorMessage = signal('');
 
   ngOnInit(): void {
     this.loadClientes();
   }
 
-  loadClientes(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+  loadClientes(showLoading = true): void {
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
+
+    this.errorMessage.set('');
 
     this.clienteService
       .findAll()
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
-          this.clientes = response.clientes;
+          this.clientes.set(response.clientes);
         },
         error: (error: unknown) => {
-          this.errorMessage = this.resolveErrorMessage(error);
+          this.errorMessage.set(this.resolveErrorMessage(error));
         },
       });
   }
 
   newCliente(): void {
-    this.selectedCliente = null;
-    this.showForm = true;
+    this.selectedCliente.set(null);
+    this.showForm.set(true);
     this.clearMessages();
   }
 
   editCliente(cliente: Cliente): void {
-    this.selectedCliente = cliente;
-    this.showForm = true;
+    this.selectedCliente.set(cliente);
+    this.showForm.set(true);
     this.clearMessages();
   }
 
   saveCliente(payload: ClientePayload): void {
-    if (this.isSaving) {
+    if (this.isSaving()) {
       return;
     }
 
-    this.isSaving = true;
+    this.isSaving.set(true);
     this.clearMessages();
 
-    const request = this.selectedCliente
-      ? this.clienteService.update(this.selectedCliente.id, payload)
+    const cliente = this.selectedCliente();
+    const request = cliente
+      ? this.clienteService.update(cliente.id, payload)
       : this.clienteService.create(payload);
 
-    request
-      .pipe(timeout(15000), finalize(() => (this.isSaving = false)))
-      .subscribe({
-        next: (response) => {
-          this.feedbackMessage = response.message;
-          this.syncClienteInList(response.cliente);
-          this.showForm = false;
-          this.selectedCliente = null;
-          this.loadClientes();
-        },
-        error: (error: unknown) => {
-          this.errorMessage = this.resolveErrorMessage(error);
-        },
-      });
+    request.pipe(finalize(() => this.isSaving.set(false))).subscribe({
+      next: (response) => {
+        this.feedbackMessage.set(response.message);
+        this.syncClienteInList(response.cliente);
+        this.showForm.set(false);
+        this.selectedCliente.set(null);
+        this.loadClientes(false);
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.resolveErrorMessage(error));
+      },
+    });
   }
 
   deleteCliente(cliente: Cliente): void {
@@ -110,18 +119,21 @@ export class ClientesList implements OnInit {
 
     this.clienteService.delete(cliente.id).subscribe({
       next: (response) => {
-        this.feedbackMessage = response.message;
-        this.loadClientes();
+        this.feedbackMessage.set(response.message);
+        this.clientes.update((clientes) =>
+          clientes.filter((item) => item.id !== cliente.id),
+        );
+        this.loadClientes(false);
       },
       error: (error: unknown) => {
-        this.errorMessage = this.resolveErrorMessage(error);
+        this.errorMessage.set(this.resolveErrorMessage(error));
       },
     });
   }
 
   cancelForm(): void {
-    this.showForm = false;
-    this.selectedCliente = null;
+    this.showForm.set(false);
+    this.selectedCliente.set(null);
     this.clearMessages();
   }
 
@@ -130,23 +142,20 @@ export class ClientesList implements OnInit {
   }
 
   private clearMessages(): void {
-    this.feedbackMessage = '';
-    this.errorMessage = '';
+    this.feedbackMessage.set('');
+    this.errorMessage.set('');
   }
 
   private syncClienteInList(cliente: Cliente): void {
-    const clienteIndex = this.clientes.findIndex(
-      (item) => item.id === cliente.id,
-    );
+    this.clientes.update((clientes) => {
+      const exists = clientes.some((item) => item.id === cliente.id);
 
-    if (clienteIndex >= 0) {
-      this.clientes = this.clientes.map((item) =>
-        item.id === cliente.id ? cliente : item,
-      );
-      return;
-    }
+      if (!exists) {
+        return [cliente, ...clientes];
+      }
 
-    this.clientes = [cliente, ...this.clientes];
+      return clientes.map((item) => (item.id === cliente.id ? cliente : item));
+    });
   }
 
   private resolveErrorMessage(error: unknown): string {

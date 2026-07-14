@@ -1,5 +1,12 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -11,48 +18,43 @@ import { Cliente } from '../../../clientes/models/cliente.model';
   imports: [AsyncPipe],
   templateUrl: './dashboard-home.html',
   styleUrl: './dashboard-home.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHome implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clienteService = inject(ClienteService);
 
   readonly currentUser$ = this.authService.currentUser$;
+  readonly clientes = signal<Cliente[]>([]);
+  readonly isLoading = signal(false);
+  readonly errorMessage = signal('');
 
-  clientes: Cliente[] = [];
-  ultimosClientes: Cliente[] = [];
-  isLoading = false;
-  errorMessage = '';
-
-  get totalClientes(): number {
-    return this.clientes.length;
-  }
-
-  get clientesActivos(): number {
-    return this.clientes.filter((cliente) => cliente.estado).length;
-  }
-
-  get clientesInactivos(): number {
-    return this.clientes.filter((cliente) => !cliente.estado).length;
-  }
+  readonly totalClientes = computed(() => this.clientes().length);
+  readonly clientesActivos = computed(
+    () => this.clientes().filter((cliente) => cliente.estado).length,
+  );
+  readonly clientesInactivos = computed(
+    () => this.clientes().filter((cliente) => !cliente.estado).length,
+  );
+  readonly ultimosClientes = computed(() => this.clientes().slice(0, 5));
 
   ngOnInit(): void {
     this.loadClientes();
   }
 
   loadClientes(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
     this.clienteService
       .findAll()
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
-          this.clientes = response.clientes;
-          this.ultimosClientes = response.clientes.slice(0, 5);
+          this.clientes.set(response.clientes);
         },
         error: (error: unknown) => {
-          this.errorMessage = this.resolveErrorMessage(error);
+          this.errorMessage.set(this.resolveErrorMessage(error));
         },
       });
   }
@@ -62,6 +64,15 @@ export class DashboardHome implements OnInit {
   }
 
   private resolveErrorMessage(error: unknown): string {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'name' in error &&
+      error.name === 'TimeoutError'
+    ) {
+      return 'La solicitud tardo demasiado. Verifica la conexion e intenta nuevamente.';
+    }
+
     if (
       typeof error === 'object' &&
       error !== null &&

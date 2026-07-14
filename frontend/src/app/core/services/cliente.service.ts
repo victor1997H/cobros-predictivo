@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, timeout } from 'rxjs';
 
 import {
   ClientePayload,
@@ -20,18 +20,24 @@ export class ClienteService {
       : 'https://backsistemacobros.byronrm.com/clientes';
 
   findAll(): Observable<ClientesResponse> {
-    return this.http.get<ClientesResponse>(this.apiUrl);
+    return this.http.get<ClientesResponse>(this.apiUrl).pipe(timeout(15000));
   }
 
   create(data: ClientePayload): Observable<ClienteResponse> {
-    return this.http.post<ClienteResponse>(this.apiUrl, data);
+    return this.http
+      .post<ClienteResponse>(this.apiUrl, data)
+      .pipe(timeout(15000));
   }
 
   update(id: number, data: ClientePayload): Observable<ClienteResponse> {
-    return this.http.patch<ClienteResponse>(`${this.apiUrl}/${id}`, data);
+    return this.http
+      .patch<ClienteResponse>(`${this.apiUrl}/${id}`, data)
+      .pipe(timeout(15000));
   }
 
   delete(id: number): Observable<DeleteClienteResponse> {
-    return this.http.delete<DeleteClienteResponse>(`${this.apiUrl}/${id}`);
+    return this.http
+      .delete<DeleteClienteResponse>(`${this.apiUrl}/${id}`)
+      .pipe(timeout(15000));
   }
 }

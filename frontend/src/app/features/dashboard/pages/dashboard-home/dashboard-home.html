@@ -8,29 +8,29 @@
     </header>
   }
 
-  @if (errorMessage) {
-    <p class="alert error">{{ errorMessage }}</p>
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
   }
 
   <div class="cards">
     <div class="card">
       <span>Total clientes</span>
-      <h1>{{ totalClientes }}</h1>
+      <h1>{{ totalClientes() }}</h1>
     </div>
 
     <div class="card">
       <span>Clientes activos</span>
-      <h1>{{ clientesActivos }}</h1>
+      <h1>{{ clientesActivos() }}</h1>
     </div>
 
     <div class="card danger">
       <span>Clientes inactivos</span>
-      <h1>{{ clientesInactivos }}</h1>
+      <h1>{{ clientesInactivos() }}</h1>
     </div>
 
     <div class="card">
       <span>Ultimos registros</span>
-      <h1>{{ ultimosClientes.length }}</h1>
+      <h1>{{ ultimosClientes().length }}</h1>
     </div>
   </div>
 
@@ -38,9 +38,9 @@
     <div class="table-card">
       <h3>Ultimos clientes</h3>
 
-      @if (isLoading) {
+      @if (isLoading()) {
         <p class="empty">Cargando informacion...</p>
-      } @else if (ultimosClientes.length === 0) {
+      } @else if (ultimosClientes().length === 0) {
         <p class="empty">No existen clientes registrados.</p>
       } @else {
         <table>
@@ -53,7 +53,7 @@
           </thead>
 
           <tbody>
-            @for (cliente of ultimosClientes; track cliente.id) {
+            @for (cliente of ultimosClientes(); track cliente.id) {
               <tr>
                 <td>{{ fullName(cliente) }}</td>
                 <td>{{ cliente.email }}</td>
