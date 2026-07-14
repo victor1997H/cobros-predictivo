@@ -1,0 +1,51 @@
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    restart: unless-stopped
+
+    command:
+      # Panel interno de Traefik, no publicado directamente
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+
+      # Detectar servicios de Docker
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=proxy"
+
+      # Puertos de entrada
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Redirigir HTTP hacia HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+
+      # Certificados SSL con Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.email=vdy.hualpa@yavirac.edu.ec"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+
+      # Registros
+      - "--log.level=INFO"
+      - "--accesslog=true"
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+    networks:
+      - proxy
+
+volumes:
+  letsencrypt:
+
+networks:
+  proxy:
+    external: true
