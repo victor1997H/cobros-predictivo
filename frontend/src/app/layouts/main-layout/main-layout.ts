@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { Footer } from '../footer/footer';
@@ -12,4 +12,10 @@ import { Sidebar } from '../sidebar/sidebar';
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
 })
-export class MainLayout {}
+export class MainLayout {
+  readonly isSidebarVisible = signal(true);
+
+  toggleSidebar(): void {
+    this.isSidebarVisible.update((isVisible) => !isVisible);
+  }
+}

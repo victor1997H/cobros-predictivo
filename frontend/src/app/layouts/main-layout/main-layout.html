@@ -1,5 +1,35 @@
-<div class="app-container">
-  <app-sidebar></app-sidebar>
+<div class="app-container" [class.sidebar-hidden]="!isSidebarVisible()">
+  @if (isSidebarVisible()) {
+    <div class="sidebar-shell">
+      <app-sidebar></app-sidebar>
+
+      <button
+        class="sidebar-toggle close-toggle"
+        type="button"
+        aria-label="Ocultar menu lateral"
+        title="Ocultar menu"
+        (click)="toggleSidebar()"
+      >
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M15 6 9 12l6 6" />
+        </svg>
+      </button>
+    </div>
+  } @else {
+    <button
+      class="sidebar-toggle open-toggle"
+      type="button"
+      aria-label="Mostrar menu lateral"
+      title="Mostrar menu"
+      (click)="toggleSidebar()"
+    >
+      <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <path d="M4 6h16" />
+        <path d="M4 12h16" />
+        <path d="M4 18h16" />
+      </svg>
+    </button>
+  }
 
   <div class="main-content">
     <app-navbar></app-navbar>
