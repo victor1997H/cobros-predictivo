@@ -1,0 +1,721 @@
+[
+  {
+    "updatedAt": "2026-08-12T22:49:11.680Z",
+    "createdAt": "2026-08-07T06:36:38.181Z",
+    "id": "o3rNTqZTBVrOqYjH",
+    "name": "CobrosPredictivo - Gestión automática de cuotas",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 8
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -288,
+          -64
+        ],
+        "id": "3a4e478d-016a-4098-8d54-6b6dea494a6d",
+        "name": "Inicio programado"
+      },
+      {
+        "parameters": {
+          "url": "http://backend:3000/cuotas/gestion-cobranza",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          -64,
+          -64
+        ],
+        "id": "ba026595-2eca-408a-8866-4f45e46d893c",
+        "name": "Consultar cuotas para gestion"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "60c37f7a-ab0b-4fa5-8422-19707277a084",
+                "leftValue": "={{ $json.cuotas.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          160,
+          -64
+        ],
+        "id": "63591c3d-b0ce-4f36-842e-6af6771b66f4",
+        "name": "Verificar si hay cuotas"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "cuotas",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          384,
+          -160
+        ],
+        "id": "9dc35eac-9446-4399-837c-829dca5b0b61",
+        "name": "Separar cuotas una por una"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "BAJO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "d592425b-f0d6-47b2-8c4c-36ff8f18fe86"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "BAJO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "aec0df38-abf6-4b42-ada6-72e7e23870b5",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "MEDIO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "MEDIO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "f8de73fb-137f-40fa-9101-66c26ae2debc",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "ALTO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "ALTO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "200ebe5a-46dc-483e-91e3-0f8dc0cf60e1",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "CRITICO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CRITICO"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          608,
+          -160
+        ],
+        "id": "c219d295-ab5e-455f-988c-83a6b4f580a3",
+        "name": "Clasificar por nivel de riesgo"
+      },
+      {
+        "parameters": {
+          "mode": "manual",
+          "duplicateItem": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-riesgo",
+                "name": "riesgo",
+                "value": "BAJO",
+                "type": "string"
+              },
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-prioridad",
+                "name": "prioridad",
+                "value": "BAJA",
+                "type": "string"
+              },
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-accion",
+                "name": "accion",
+                "value": "Aviso preventivo antes del vencimiento",
+                "type": "string"
+              },
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-canal",
+                "name": "canal",
+                "value": "Correo y WhatsApp",
+                "type": "string"
+              },
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-modo",
+                "name": "modo",
+                "value": "Produccion",
+                "type": "string"
+              },
+              {
+                "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-mensaje",
+                "name": "mensaje",
+                "value": "={{ 'Aviso preventivo para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' vence el ' + $json.cuota.fechaVencimiento + ' y mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + '.' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          864,
+          -400
+        ],
+        "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01",
+        "name": "Aviso preventivo"
+      },
+      {
+        "parameters": {
+          "mode": "manual",
+          "duplicateItem": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-riesgo",
+                "name": "riesgo",
+                "value": "MEDIO",
+                "type": "string"
+              },
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-prioridad",
+                "name": "prioridad",
+                "value": "MEDIA",
+                "type": "string"
+              },
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-accion",
+                "name": "accion",
+                "value": "Recordatorio de mora temprana",
+                "type": "string"
+              },
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-canal",
+                "name": "canal",
+                "value": "Correo y WhatsApp",
+                "type": "string"
+              },
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-modo",
+                "name": "modo",
+                "value": "Produccion",
+                "type": "string"
+              },
+              {
+                "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-mensaje",
+                "name": "mensaje",
+                "value": "={{ 'Recordatorio de mora temprana para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y un saldo pendiente de $' + $json.cuota.saldoPendiente + '.' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          864,
+          -208
+        ],
+        "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2",
+        "name": "Recordatorio de mora temprana"
+      },
+      {
+        "parameters": {
+          "mode": "manual",
+          "duplicateItem": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-riesgo",
+                "name": "riesgo",
+                "value": "ALTO",
+                "type": "string"
+              },
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-prioridad",
+                "name": "prioridad",
+                "value": "ALTA",
+                "type": "string"
+              },
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-accion",
+                "name": "accion",
+                "value": "Seguimiento prioritario de cobranza",
+                "type": "string"
+              },
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-canal",
+                "name": "canal",
+                "value": "Correo y WhatsApp",
+                "type": "string"
+              },
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-modo",
+                "name": "modo",
+                "value": "Produccion",
+                "type": "string"
+              },
+              {
+                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-mensaje",
+                "name": "mensaje",
+                "value": "={{ 'Seguimiento prioritario para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Se recomienda contacto inmediato.' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          864,
+          -16
+        ],
+        "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72",
+        "name": "Seguimiento prioritario"
+      },
+      {
+        "parameters": {
+          "mode": "manual",
+          "duplicateItem": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-riesgo",
+                "name": "riesgo",
+                "value": "CRITICO",
+                "type": "string"
+              },
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-prioridad",
+                "name": "prioridad",
+                "value": "MAXIMA",
+                "type": "string"
+              },
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-accion",
+                "name": "accion",
+                "value": "Revision critica y contacto urgente",
+                "type": "string"
+              },
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-canal",
+                "name": "canal",
+                "value": "Correo y WhatsApp",
+                "type": "string"
+              },
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-modo",
+                "name": "modo",
+                "value": "Produccion",
+                "type": "string"
+              },
+              {
+                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-mensaje",
+                "name": "mensaje",
+                "value": "={{ 'Revision critica para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Requiere contacto urgente y revision interna.' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          864,
+          176
+        ],
+        "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1",
+        "name": "Revision critica y contacto urgente"
+      },
+      {
+        "parameters": {
+          "mode": "manual",
+          "duplicateItem": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "sin-cuotas-estado",
+                "name": "estado",
+                "value": "Sin cuotas",
+                "type": "string"
+              },
+              {
+                "id": "sin-cuotas-accion",
+                "name": "accion",
+                "value": "No generar gestion de cobranza",
+                "type": "string"
+              },
+              {
+                "id": "sin-cuotas-modo",
+                "name": "modo",
+                "value": "Produccion",
+                "type": "string"
+              },
+              {
+                "id": "sin-cuotas-mensaje",
+                "name": "mensaje",
+                "value": "No existen cuotas vencidas ni proximas a vencer para gestionar hoy.",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          384,
+          96
+        ],
+        "id": "8e0b11bb-73de-40a1-a4aa-4d8e74fcf5b2",
+        "name": "Sin cuotas por gestionar"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://backend:3000/gestiones-cobranza",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1120,
+          -400
+        ],
+        "id": "b4f47156-3b37-4be1-b8dc-8f6972d75219",
+        "name": "Registrar aviso preventivo"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://backend:3000/gestiones-cobranza",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1120,
+          -208
+        ],
+        "id": "b24a8e9d-8e88-4e92-9940-9fce48e4d052",
+        "name": "Registrar mora temprana"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://backend:3000/gestiones-cobranza",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1120,
+          -16
+        ],
+        "id": "db813363-e264-4b41-ac60-f78b774414b9",
+        "name": "Registrar seguimiento prioritario"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://backend:3000/gestiones-cobranza",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1120,
+          176
+        ],
+        "id": "cf5d80b1-223c-41a7-9fcb-934269fd8792",
+        "name": "Registrar revision critica"
+      }
+    ],
+    "connections": {
+      "Inicio programado": {
+        "main": [
+          [
+            {
+              "node": "Consultar cuotas para gestion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Consultar cuotas para gestion": {
+        "main": [
+          [
+            {
+              "node": "Verificar si hay cuotas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verificar si hay cuotas": {
+        "main": [
+          [
+            {
+              "node": "Separar cuotas una por una",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Sin cuotas por gestionar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Separar cuotas una por una": {
+        "main": [
+          [
+            {
+              "node": "Clasificar por nivel de riesgo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Clasificar por nivel de riesgo": {
+        "main": [
+          [
+            {
+              "node": "Aviso preventivo",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Recordatorio de mora temprana",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Seguimiento prioritario",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Revision critica y contacto urgente",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar aviso preventivo": {
+        "main": [
+          []
+        ]
+      },
+      "Aviso preventivo": {
+        "main": [
+          [
+            {
+              "node": "Registrar aviso preventivo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar mora temprana": {
+        "main": [
+          []
+        ]
+      },
+      "Recordatorio de mora temprana": {
+        "main": [
+          [
+            {
+              "node": "Registrar mora temprana",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar seguimiento prioritario": {
+        "main": [
+          []
+        ]
+      },
+      "Seguimiento prioritario": {
+        "main": [
+          [
+            {
+              "node": "Registrar seguimiento prioritario",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar revision critica": {
+        "main": [
+          []
+        ]
+      },
+      "Revision critica y contacto urgente": {
+        "main": [
+          [
+            {
+              "node": "Registrar revision critica",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "nodeGroups": [],
+    "pinData": {},
+    "versionId": "fac92ff2-cf56-4bb9-a598-ee6ab8a25421",
+    "activeVersionId": null,
+    "versionCounter": 48,
+    "triggerCount": 0,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]

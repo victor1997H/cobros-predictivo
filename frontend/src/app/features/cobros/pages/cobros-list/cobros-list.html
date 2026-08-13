@@ -1,1 +1,163 @@
-<p>cobros-list works!</p>
+<section class="cobros-page">
+  <div class="page-header">
+    <div>
+      <h2>Gesti&oacute;n de cobros</h2>
+      <p>Cuotas vencidas y avisos preventivos obtenidos desde el backend.</p>
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="isLoading()"
+      (click)="loadCobros()"
+    >
+      Actualizar
+    </button>
+  </div>
+
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
+  }
+
+  <section class="summary-grid" aria-label="Resumen de cobros">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Total a gestionar</span>
+        <strong>{{ totalGestion() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Vencen ma&ntilde;ana</span>
+        <strong>{{ vencenManana() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Cuotas vencidas</span>
+        <strong>{{ cuotasVencidas() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Saldo pendiente</span>
+        <strong>{{ formatCurrency(saldoPendienteTotal()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-toolbar">
+        <div>
+          <h3>Cartera para gesti&oacute;n</h3>
+          <p>
+            Fecha de referencia:
+            <strong>{{ fechaReferencia() || 'Sin cargar' }}</strong>
+            &middot; Vencen ma&ntilde;ana:
+            <strong>{{ fechaManana() || 'Sin cargar' }}</strong>
+          </p>
+        </div>
+
+        <div class="filters" aria-label="Filtros por riesgo">
+          @for (filtro of filtros; track filtro.value) {
+            <button
+              type="button"
+              class="filter-button"
+              [class.active]="filtroSeleccionado() === filtro.value"
+              (click)="setFiltro(filtro.value)"
+            >
+              {{ filtro.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <p class="loading">Cargando cuotas para gesti&oacute;n...</p>
+      } @else if (cuotas().length === 0) {
+        <p class="empty">No existen cuotas para gestionar.</p>
+      } @else if (cuotasFiltradas().length === 0) {
+        <p class="empty">No hay cuotas para el filtro seleccionado.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="cuotasFiltradas()">
+            <ng-container matColumnDef="cliente">
+              <th mat-header-cell *matHeaderCellDef>Cliente</th>
+              <td mat-cell *matCellDef="let item">
+                <strong>{{ nombreCliente(item) }}</strong>
+                <small>{{ item.cliente.identificacion }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="telefono">
+              <th mat-header-cell *matHeaderCellDef>Contacto</th>
+              <td mat-cell *matCellDef="let item">
+                <span>{{ item.cliente.telefono }}</span>
+                <small>{{ item.cliente.email }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="cuota">
+              <th mat-header-cell *matHeaderCellDef>Cuota</th>
+              <td mat-cell *matCellDef="let item">
+                #{{ item.cuota.numeroCuota }}
+                <small>Pr&eacute;stamo {{ item.prestamo.id }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="fechaVencimiento">
+              <th mat-header-cell *matHeaderCellDef>Vencimiento</th>
+              <td mat-cell *matCellDef="let item">
+                {{ item.cuota.fechaVencimiento }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="saldoPendiente">
+              <th mat-header-cell *matHeaderCellDef>Saldo</th>
+              <td mat-cell *matCellDef="let item">
+                {{ formatCurrency(item.cuota.saldoPendiente) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="diasAtraso">
+              <th mat-header-cell *matHeaderCellDef>D&iacute;as</th>
+              <td mat-cell *matCellDef="let item">
+                {{ item.diasAtraso }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="nivelRiesgo">
+              <th mat-header-cell *matHeaderCellDef>Riesgo</th>
+              <td mat-cell *matCellDef="let item">
+                <span
+                  class="risk-badge"
+                  [class.risk-bajo]="item.nivelRiesgo === 'BAJO'"
+                  [class.risk-medio]="item.nivelRiesgo === 'MEDIO'"
+                  [class.risk-alto]="item.nivelRiesgo === 'ALTO'"
+                  [class.risk-critico]="item.nivelRiesgo === 'CRITICO'"
+                >
+                  {{ item.nivelRiesgo }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="tipoGestion">
+              <th mat-header-cell *matHeaderCellDef>Gesti&oacute;n</th>
+              <td mat-cell *matCellDef="let item">
+                {{ tipoGestionLabel(item) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

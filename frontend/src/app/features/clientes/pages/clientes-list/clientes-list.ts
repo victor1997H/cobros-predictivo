@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
@@ -107,9 +101,7 @@ export class ClientesList implements OnInit {
   }
 
   deleteCliente(cliente: Cliente): void {
-    const confirmed = confirm(
-      `Eliminar al cliente ${cliente.nombres} ${cliente.apellidos}?`,
-    );
+    const confirmed = confirm(`Eliminar al cliente ${cliente.nombres} ${cliente.apellidos}?`);
 
     if (!confirmed) {
       return;
@@ -120,9 +112,7 @@ export class ClientesList implements OnInit {
     this.clienteService.delete(cliente.id).subscribe({
       next: (response) => {
         this.feedbackMessage.set(response.message);
-        this.clientes.update((clientes) =>
-          clientes.filter((item) => item.id !== cliente.id),
-        );
+        this.clientes.update((clientes) => clientes.filter((item) => item.id !== cliente.id));
         this.loadClientes(false);
       },
       error: (error: unknown) => {
@@ -165,7 +155,7 @@ export class ClientesList implements OnInit {
       'name' in error &&
       error.name === 'TimeoutError'
     ) {
-      return 'La solicitud tardo demasiado. Verifica la conexion e intenta nuevamente.';
+      return 'La solicitud tard\u00f3 demasiado. Verifica la conexi\u00f3n e intenta nuevamente.';
     }
 
     if (
@@ -187,6 +177,6 @@ export class ClientesList implements OnInit {
       }
     }
 
-    return 'No se pudo completar la operacion.';
+    return 'No se pudo completar la operaci\u00f3n.';
   }
 }

@@ -1,1 +1,194 @@
-<p>pagos-list works!</p>
+<section class="pagos-page">
+  <div class="page-header">
+    <div>
+      <h2>Pagos</h2>
+      <p>Registra pagos reales contra cuotas pendientes o vencidas.</p>
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="isLoading()"
+      (click)="loadData()"
+    >
+      Actualizar
+    </button>
+  </div>
+
+  @if (feedbackMessage()) {
+    <p class="alert success">{{ feedbackMessage() }}</p>
+  }
+
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
+  }
+
+  <section class="summary-grid" aria-label="Resumen de pagos">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Pagos registrados</span>
+        <strong>{{ totalPagos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Total recaudado</span>
+        <strong>{{ formatCurrency(totalRecaudado()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Cuotas para pagar</span>
+        <strong>{{ cuotasParaPagar() }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <mat-card class="form-card">
+    <mat-card-header>
+      <mat-card-title>Registrar pago</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="pago-form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Cuota</mat-label>
+            <mat-select formControlName="cuotaId" (selectionChange)="onCuotaChange($event.value)">
+              @for (item of cuotasDisponibles(); track item.cuota.id) {
+                <mat-option [value]="item.cuota.id">
+                  {{ nombreCliente(item) }} - cuota #{{ item.cuota.numeroCuota }} - saldo
+                  {{ formatCurrency(item.cuota.saldoPendiente) }}
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.controls.cuotaId.hasError('required')) {
+              <mat-error>Selecciona una cuota</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Monto pagado</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+            @if (form.controls.monto.hasError('required')) {
+              <mat-error>Ingresa el monto</mat-error>
+            }
+            @if (form.controls.monto.hasError('min')) {
+              <mat-error>El monto debe ser mayor a cero</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>M&eacute;todo de pago</mat-label>
+            <mat-select formControlName="metodoPago">
+              @for (metodo of metodosPago; track metodo.value) {
+                <mat-option [value]="metodo.value">{{ metodo.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Referencia</mat-label>
+            <input matInput formControlName="referencia" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Observaci&oacute;n</mat-label>
+            <input matInput formControlName="observacion" />
+          </mat-form-field>
+        </div>
+
+        @if (cuotaSeleccionada(); as item) {
+          <div class="selected-cuota">
+            <strong>{{ nombreCliente(item) }}</strong>
+            <span>
+              Riesgo {{ item.nivelRiesgo }} &middot; saldo pendiente
+              {{ formatCurrency(item.cuota.saldoPendiente) }}
+            </span>
+          </div>
+        }
+
+        <div class="form-actions">
+          <button mat-button type="button" [disabled]="isSaving()" (click)="clearForm()">
+            Limpiar
+          </button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            {{ isSaving() ? 'Guardando...' : 'Registrar pago' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <h3>Historial de pagos</h3>
+
+      @if (isLoading()) {
+        <p class="loading">Cargando pagos...</p>
+      } @else if (pagos().length === 0) {
+        <p class="empty">No existen pagos registrados.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="pagos()">
+            <ng-container matColumnDef="fechaPago">
+              <th mat-header-cell *matHeaderCellDef>Fecha</th>
+              <td mat-cell *matCellDef="let item">{{ item.pago.fechaPago }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="cliente">
+              <th mat-header-cell *matHeaderCellDef>Cliente</th>
+              <td mat-cell *matCellDef="let item">
+                <strong>{{ nombreCliente(item) }}</strong>
+                <small>{{ item.cliente.identificacion }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="cuota">
+              <th mat-header-cell *matHeaderCellDef>Cuota</th>
+              <td mat-cell *matCellDef="let item">
+                #{{ item.cuota.numeroCuota }}
+                <small>Pr&eacute;stamo {{ item.prestamo.id }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="monto">
+              <th mat-header-cell *matHeaderCellDef>Monto</th>
+              <td mat-cell *matCellDef="let item">
+                {{ formatCurrency(item.pago.monto) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="metodoPago">
+              <th mat-header-cell *matHeaderCellDef>M&eacute;todo</th>
+              <td mat-cell *matCellDef="let item">
+                {{ item.pago.metodoPago }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="saldoPendiente">
+              <th mat-header-cell *matHeaderCellDef>Saldo cuota</th>
+              <td mat-cell *matCellDef="let item">
+                {{ formatCurrency(item.cuota.saldoPendiente) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="estado">
+              <th mat-header-cell *matHeaderCellDef>Estado cuota</th>
+              <td mat-cell *matCellDef="let item">
+                <span class="status-badge" [class.paid]="item.cuota.estado === 'PAGADA'">
+                  {{ item.cuota.estado }}
+                </span>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

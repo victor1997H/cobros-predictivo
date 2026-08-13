@@ -84,6 +84,9 @@ jobs:
             docker compose pull backend frontend
             docker compose up -d
 
+            docker compose exec -T n8n n8n import:workflow \
+              --input=/workflows/flujo-actual-cobrospredictivo.json
+
             docker image prune -f
 
             docker compose ps

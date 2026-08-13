@@ -29,17 +29,17 @@
     </div>
 
     <div class="card">
-      <span>Ultimos registros</span>
+      <span>&Uacute;ltimos registros</span>
       <h1>{{ ultimosClientes().length }}</h1>
     </div>
   </div>
 
   <div class="content-grid">
     <div class="table-card">
-      <h3>Ultimos clientes</h3>
+      <h3>&Uacute;ltimos clientes</h3>
 
       @if (isLoading()) {
-        <p class="empty">Cargando informacion...</p>
+        <p class="empty">Cargando informaci&oacute;n...</p>
       } @else if (ultimosClientes().length === 0) {
         <p class="empty">No existen clientes registrados.</p>
       } @else {
@@ -70,7 +70,7 @@
     </div>
 
     <div class="activity-card">
-      <h3>Sesion actual</h3>
+      <h3>Sesi&oacute;n actual</h3>
 
       @if (currentUser$ | async; as currentUser) {
         <p><strong>Usuario:</strong> {{ currentUser.nombre }}</p>

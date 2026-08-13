@@ -1,0 +1,274 @@
+[
+  {
+    "updatedAt": "2026-08-07T08:50:37.978Z",
+    "createdAt": "2026-08-07T06:36:38.181Z",
+    "id": "o3rNTqZTBVrOqYjH",
+    "name": "CobrosPredictivo - Gestión automática de cuotas",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 8
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -288,
+          -64
+        ],
+        "id": "3a4e478d-016a-4098-8d54-6b6dea494a6d",
+        "name": "Schedule Trigger"
+      },
+      {
+        "parameters": {
+          "url": "http://backend:3000/cuotas/gestion-cobranza",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          -64,
+          -64
+        ],
+        "id": "ba026595-2eca-408a-8866-4f45e46d893c",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "60c37f7a-ab0b-4fa5-8422-19707277a084",
+                "leftValue": "={{ $json.cuotas.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          160,
+          -64
+        ],
+        "id": "63591c3d-b0ce-4f36-842e-6af6771b66f4",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "cuotas",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          384,
+          -160
+        ],
+        "id": "9dc35eac-9446-4399-837c-829dca5b0b61",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "BAJO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "d592425b-f0d6-47b2-8c4c-36ff8f18fe86"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "BAJO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "aec0df38-abf6-4b42-ada6-72e7e23870b5",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "MEDIO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "MEDIO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "f8de73fb-137f-40fa-9101-66c26ae2debc",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "ALTO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "ALTO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "200ebe5a-46dc-483e-91e3-0f8dc0cf60e1",
+                      "leftValue": "={{ $json.nivelRiesgo }}",
+                      "rightValue": "CRITICO",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CRITICO"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          608,
+          -160
+        ],
+        "id": "c219d295-ab5e-455f-988c-83a6b4f580a3",
+        "name": "Switch"
+      }
+    ],
+    "connections": {
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "nodeGroups": [],
+    "pinData": {},
+    "versionId": "7f38fdc9-adeb-4c4c-bade-6763ad4e677f",
+    "activeVersionId": null,
+    "versionCounter": 37,
+    "triggerCount": 0,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]

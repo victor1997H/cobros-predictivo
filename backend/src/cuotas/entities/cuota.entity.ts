@@ -4,10 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { GestionCobranza } from '../../gestiones-cobranza/entities/gestion-cobranza.entity';
+import { Pago } from '../../pagos/entities/pago.entity';
 import { Prestamo } from '../../prestamos/entities/prestamo.entity';
 
 export const CUOTA_ESTADOS = ['PENDIENTE', 'PAGADA', 'VENCIDA'] as const;
@@ -42,6 +45,12 @@ export class Cuota {
 
   @Column({ length: 30, default: 'PENDIENTE' })
   estado!: CuotaEstado;
+
+  @OneToMany(() => Pago, (pago) => pago.cuota)
+  pagos!: Pago[];
+
+  @OneToMany(() => GestionCobranza, (gestion) => gestion.cuota)
+  gestionesCobranza!: GestionCobranza[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

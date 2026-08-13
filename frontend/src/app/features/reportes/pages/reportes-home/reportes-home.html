@@ -1,1 +1,134 @@
-<p>reportes-home works!</p>
+<section class="reportes-page">
+  <div class="page-header">
+    <div>
+      <h2>Reportes</h2>
+      <p>Indicadores calculados con datos reales de clientes, cobros y pagos.</p>
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="isLoading()"
+      (click)="loadReportes()"
+    >
+      Actualizar
+    </button>
+  </div>
+
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
+  }
+
+  <section class="summary-grid" aria-label="Resumen general">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Clientes activos</span>
+        <strong>{{ clientesActivos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Clientes inactivos</span>
+        <strong>{{ clientesInactivos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Cuotas para gesti&oacute;n</span>
+        <strong>{{ totalGestion() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Saldo en gesti&oacute;n</span>
+        <strong>{{ formatCurrency(saldoPendienteGestion()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Pagos registrados</span>
+        <strong>{{ pagos().length }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Gestiones n8n</span>
+        <strong>{{ gestionesRegistradas().length }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Notificaciones procesadas</span>
+        <strong>{{ notificacionesProcesadas() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Total recaudado</span>
+        <strong>{{ formatCurrency(totalRecaudado()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-toolbar">
+        <div>
+          <h3>Riesgo de cobranza</h3>
+          <p>
+            Fecha de referencia:
+            <strong>{{ fechaReferencia() || 'Sin cargar' }}</strong>
+            &middot; Vencen ma&ntilde;ana:
+            <strong>{{ fechaManana() || 'Sin cargar' }}</strong>
+          </p>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <p class="loading">Cargando reportes...</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="resumenRiesgo()">
+            <ng-container matColumnDef="nivel">
+              <th mat-header-cell *matHeaderCellDef>Nivel</th>
+              <td mat-cell *matCellDef="let item">
+                <span
+                  class="risk-badge"
+                  [class.risk-bajo]="item.nivel === 'BAJO'"
+                  [class.risk-medio]="item.nivel === 'MEDIO'"
+                  [class.risk-alto]="item.nivel === 'ALTO'"
+                  [class.risk-critico]="item.nivel === 'CRITICO'"
+                >
+                  {{ item.nivel }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="cantidad">
+              <th mat-header-cell *matHeaderCellDef>Cuotas</th>
+              <td mat-cell *matCellDef="let item">{{ item.cantidad }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="saldoPendiente">
+              <th mat-header-cell *matHeaderCellDef>Saldo pendiente</th>
+              <td mat-cell *matCellDef="let item">
+                {{ formatCurrency(item.saldoPendiente) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

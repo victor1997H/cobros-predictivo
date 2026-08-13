@@ -1,7 +1,7 @@
 <header class="navbar">
   <div>
-    <h1>Dashboard</h1>
-    <p>Resumen general del sistema de cobros</p>
+    <h1>{{ pageHeader().title }}</h1>
+    <p>{{ pageHeader().subtitle }}</p>
   </div>
 
   @if (currentUser$ | async; as currentUser) {
@@ -22,9 +22,7 @@
         </div>
       </div>
 
-      <button class="logout-button" type="button" (click)="logout()">
-        Salir
-      </button>
+      <button class="logout-button" type="button" (click)="logout()">Salir</button>
     </div>
   }
 </header>

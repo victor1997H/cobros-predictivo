@@ -1,1 +1,110 @@
-<p>configuracion-home works!</p>
+<section class="configuracion-page">
+  <div class="page-header">
+    <div>
+      <h2>Configuraci&oacute;n</h2>
+      <p>Estado de las integraciones principales del sistema.</p>
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="isLoading()"
+      (click)="loadEstadoSistema()"
+    >
+      Verificar
+    </button>
+  </div>
+
+  <section class="summary-grid" aria-label="Resumen de configuracion">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Servicios operativos</span>
+        <strong>{{ serviciosOperativos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Servicios con error</span>
+        <strong>{{ serviciosConError() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Estado general</span>
+        <strong class="state-text" [class.error-text]="!sistemaOperativo()">
+          {{ sistemaOperativo() ? 'Listo' : 'Revisar' }}
+        </strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <mat-card class="config-card">
+    <mat-card-content>
+      <h3>Entorno actual</h3>
+      <dl>
+        <div>
+          <dt>Frontend</dt>
+          <dd>{{ frontendUrl() }}</dd>
+        </div>
+        <div>
+          <dt>Backend</dt>
+          <dd>{{ backendUrl() }}</dd>
+        </div>
+        <div>
+          <dt>n8n</dt>
+          <dd>{{ n8nUrl() }}</dd>
+        </div>
+      </dl>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <h3>Verificaci&oacute;n de servicios</h3>
+
+      @if (isLoading()) {
+        <p class="loading">Verificando servicios...</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="servicios()">
+            <ng-container matColumnDef="nombre">
+              <th mat-header-cell *matHeaderCellDef>Servicio</th>
+              <td mat-cell *matCellDef="let servicio">
+                {{ servicio.nombre }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="origen">
+              <th mat-header-cell *matHeaderCellDef>Origen</th>
+              <td mat-cell *matCellDef="let servicio">
+                {{ servicio.origen }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="estado">
+              <th mat-header-cell *matHeaderCellDef>Estado</th>
+              <td mat-cell *matCellDef="let servicio">
+                <span class="status-badge" [class.error]="servicio.estado === 'ERROR'">
+                  {{ servicio.estado }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="detalle">
+              <th mat-header-cell *matHeaderCellDef>Detalle</th>
+              <td mat-cell *matCellDef="let servicio">
+                {{ servicio.detalle }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

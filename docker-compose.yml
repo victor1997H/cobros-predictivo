@@ -40,6 +40,21 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      WHATSAPP_GRAPH_API_VERSION: ${WHATSAPP_GRAPH_API_VERSION:-v26.0}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_TEMPLATE_NAME: ${WHATSAPP_TEMPLATE_NAME:-}
+      WHATSAPP_TEMPLATE_LANGUAGE: ${WHATSAPP_TEMPLATE_LANGUAGE:-es}
+      WHATSAPP_TEMPLATE_USE_PARAMETERS: ${WHATSAPP_TEMPLATE_USE_PARAMETERS:-false}
+      WHATSAPP_TEMPLATE_BODY_PARAMETER_COUNT: ${WHATSAPP_TEMPLATE_BODY_PARAMETER_COUNT:-0}
+      WHATSAPP_SEND_FREE_TEXT: ${WHATSAPP_SEND_FREE_TEXT:-false}
 
     depends_on:
       postgres:
@@ -122,12 +137,18 @@ services:
     restart: unless-stopped
 
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
+
+    depends_on:
+      - backend
 
     environment:
-      N8N_HOST: localhost
+      N8N_HOST: ${N8N_HOST:-n8nsistemacobros.byronrm.com}
       N8N_PORT: 5678
-      N8N_PROTOCOL: http
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-https://n8nsistemacobros.byronrm.com}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-https://n8nsistemacobros.byronrm.com}
+      N8N_PROXY_HOPS: ${N8N_PROXY_HOPS:-1}
       GENERIC_TIMEZONE: America/Guayaquil
       TZ: America/Guayaquil
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
@@ -138,6 +159,17 @@ services:
 
     networks:
       - cobros_network
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.cobros-n8n.rule=Host(`n8nsistemacobros.byronrm.com`)"
+      - "traefik.http.routers.cobros-n8n.entrypoints=websecure"
+      - "traefik.http.routers.cobros-n8n.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.cobros-n8n.loadbalancer.server.port=5678"
 
 
 volumes:

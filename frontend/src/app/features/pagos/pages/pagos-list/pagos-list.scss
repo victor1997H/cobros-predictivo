@@ -1,0 +1,187 @@
+.pagos-page {
+  display: grid;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    color: #102a43;
+    font-size: 26px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: #627d98;
+  }
+}
+
+.alert {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.success {
+  color: #067647;
+  background: #ecfdf3;
+}
+
+.error {
+  color: #b42318;
+  background: #fef3f2;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.summary-card,
+.form-card,
+.table-card {
+  border-radius: 8px;
+}
+
+.summary-card {
+  mat-card-content {
+    display: grid;
+    gap: 8px;
+    min-height: 104px;
+    align-content: center;
+  }
+
+  span {
+    color: #627d98;
+    font-weight: 800;
+  }
+
+  strong {
+    color: #0b63ce;
+    font-size: 34px;
+    line-height: 1;
+  }
+}
+
+.pago-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.selected-cuota {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 4px solid #0b63ce;
+  border-radius: 8px;
+  background: #f0f4f8;
+
+  strong {
+    color: #102a43;
+  }
+
+  span {
+    color: #486581;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.table-card h3 {
+  margin: 0 0 16px;
+  color: #102a43;
+  font-size: 20px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 980px;
+}
+
+th {
+  color: #486581;
+  font-weight: 800;
+}
+
+td strong,
+td small {
+  display: block;
+}
+
+td small {
+  margin-top: 3px;
+  color: #627d98;
+  font-size: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  width: fit-content;
+  min-width: 88px;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 12px;
+  font-weight: 800;
+
+  &.paid {
+    color: #067647;
+    background: #ecfdf3;
+  }
+}
+
+.loading,
+.empty {
+  margin: 0;
+  padding: 24px;
+  color: #627d98;
+  text-align: center;
+}
+
+button {
+  border-radius: 8px;
+}
+
+@media (max-width: 900px) {
+  .summary-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+}

@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { CuotasModule } from './cuotas/cuotas.module';
+import { GestionesCobranzaModule } from './gestiones-cobranza/gestiones-cobranza.module';
+import { PagosModule } from './pagos/pagos.module';
 import { PrestamosModule } from './prestamos/prestamos.module';
 
 @Module({
@@ -40,6 +42,8 @@ import { PrestamosModule } from './prestamos/prestamos.module';
     ClientesModule,
     PrestamosModule,
     CuotasModule,
+    PagosModule,
+    GestionesCobranzaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

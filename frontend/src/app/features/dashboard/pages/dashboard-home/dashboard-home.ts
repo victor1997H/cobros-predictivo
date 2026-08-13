@@ -70,7 +70,7 @@ export class DashboardHome implements OnInit {
       'name' in error &&
       error.name === 'TimeoutError'
     ) {
-      return 'La solicitud tardo demasiado. Verifica la conexion e intenta nuevamente.';
+      return 'La solicitud tard\u00f3 demasiado. Verifica la conexi\u00f3n e intenta nuevamente.';
     }
 
     if (
@@ -92,6 +92,6 @@ export class DashboardHome implements OnInit {
       }
     }
 
-    return 'No se pudo cargar la informacion del dashboard.';
+    return 'No se pudo cargar la informaci\u00f3n del dashboard.';
   }
 }
