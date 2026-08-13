@@ -20,7 +20,12 @@ export class User {
   @Column({ length: 255, select: false })
   password!: string;
 
-  @Column({ name: 'reset_password_token_hash', length: 255, nullable: true })
+  @Column({
+    name: 'reset_password_token_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   resetPasswordTokenHash!: string | null;
 
   @Column({
