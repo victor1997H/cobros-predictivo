@@ -146,6 +146,13 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="accion">
+              <th mat-header-cell *matHeaderCellDef>Acci&oacute;n sugerida</th>
+              <td mat-cell *matCellDef="let item">
+                <strong>{{ accionSugerida(item) }}</strong>
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="tipoGestion">
               <th mat-header-cell *matHeaderCellDef>Gesti&oacute;n</th>
               <td mat-cell *matCellDef="let item">

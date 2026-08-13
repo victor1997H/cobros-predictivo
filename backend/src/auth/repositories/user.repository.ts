@@ -31,6 +31,12 @@ export class UserRepository {
       .getOne();
   }
 
+  findByResetTokenHash(tokenHash: string): Promise<User | null> {
+    return this.repository.findOne({
+      where: { resetPasswordTokenHash: tokenHash },
+    });
+  }
+
   create(data: CreateUserData): User {
     return this.repository.create(data);
   }

@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { AuthService } from './auth.service';
 import { UserRepository } from './repositories/user.repository';
 
@@ -14,8 +16,21 @@ describe('AuthService', () => {
           useValue: {
             findByEmail: jest.fn(),
             findByEmailWithPassword: jest.fn(),
+            findByResetTokenHash: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
+        {
+          provide: NotificacionesService,
+          useValue: {
+            enviarCorreoSistema: jest.fn(),
           },
         },
       ],

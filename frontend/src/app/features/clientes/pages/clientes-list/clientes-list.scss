@@ -11,13 +11,13 @@
 
   h2 {
     margin: 0;
-    color: #102a43;
+    color: var(--cp-text);
     font-size: 26px;
   }
 
   p {
     margin: 4px 0 0;
-    color: #627d98;
+    color: var(--cp-text-muted);
   }
 }
 
@@ -29,18 +29,73 @@
 }
 
 .success {
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--cp-success);
+  background: var(--cp-success-bg);
 }
 
 .error {
-  color: #b42318;
-  background: #fef3f2;
+  color: var(--cp-danger);
+  background: var(--cp-danger-bg);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  border-radius: 8px;
+
+  mat-card-content {
+    display: grid;
+    gap: 8px;
+    min-height: 104px;
+    align-content: center;
+  }
+
+  span {
+    color: var(--cp-text-muted);
+    font-weight: 800;
+  }
+
+  strong {
+    color: var(--cp-primary);
+    font-size: 34px;
+    line-height: 1;
+  }
+
+  &.danger strong {
+    color: var(--cp-danger);
+  }
 }
 
 .form-card,
 .table-card {
   border-radius: 8px;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+
+  h3 {
+    margin: 0;
+    color: var(--cp-text);
+    font-size: 20px;
+  }
+
+  p {
+    margin: 5px 0 0;
+    color: var(--cp-text-muted);
+  }
+}
+
+.search-field {
+  width: min(320px, 100%);
 }
 
 .table-wrapper {
@@ -53,7 +108,7 @@ table {
 }
 
 th {
-  color: #486581;
+  color: var(--cp-text-muted);
   font-weight: 800;
 }
 
@@ -61,15 +116,15 @@ th {
   display: inline-flex;
   padding: 5px 10px;
   border-radius: 999px;
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--cp-success);
+  background: var(--cp-success-bg);
   font-size: 12px;
   font-weight: 800;
 }
 
 .status-badge.inactive {
-  color: #b42318;
-  background: #fef3f2;
+  color: var(--cp-danger);
+  background: var(--cp-danger-bg);
 }
 
 .actions {
@@ -81,7 +136,7 @@ th {
 .empty {
   margin: 0;
   padding: 24px;
-  color: #627d98;
+  color: var(--cp-text-muted);
   text-align: center;
 }
 
@@ -93,5 +148,17 @@ button {
   .page-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+  }
+
+  .search-field {
+    width: 100%;
   }
 }

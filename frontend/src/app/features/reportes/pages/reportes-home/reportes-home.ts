@@ -82,6 +82,16 @@ export class ReportesHome implements OnInit {
       };
     });
   });
+  readonly ultimasGestiones = computed(() => this.gestionesRegistradas().slice(0, 6));
+  readonly gestionesEnviadas = computed(
+    () => this.gestionesRegistradas().filter((gestion) => gestion.estadoEnvio === 'ENVIADO').length,
+  );
+  readonly gestionesParciales = computed(
+    () => this.gestionesRegistradas().filter((gestion) => gestion.estadoEnvio === 'PARCIAL').length,
+  );
+  readonly gestionesConError = computed(
+    () => this.gestionesRegistradas().filter((gestion) => gestion.estadoEnvio === 'ERROR').length,
+  );
 
   ngOnInit(): void {
     this.loadReportes();

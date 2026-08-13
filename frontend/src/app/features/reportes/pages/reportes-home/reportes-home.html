@@ -131,4 +131,49 @@
       }
     </mat-card-content>
   </mat-card>
+
+  <section class="report-grid">
+    <mat-card class="table-card">
+      <mat-card-content>
+        <h3>Estado de notificaciones</h3>
+
+        <div class="status-grid">
+          <div>
+            <span>Enviadas</span>
+            <strong>{{ gestionesEnviadas() }}</strong>
+          </div>
+          <div>
+            <span>Parciales</span>
+            <strong>{{ gestionesParciales() }}</strong>
+          </div>
+          <div>
+            <span>Con error</span>
+            <strong>{{ gestionesConError() }}</strong>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="table-card">
+      <mat-card-content>
+        <h3>&Uacute;ltimas gestiones autom&aacute;ticas</h3>
+
+        @if (ultimasGestiones().length === 0) {
+          <p class="loading">No existen gestiones registradas.</p>
+        } @else {
+          <div class="activity-list">
+            @for (gestion of ultimasGestiones(); track gestion.id) {
+              <article>
+                <div>
+                  <strong>{{ gestion.clienteNombre }}</strong>
+                  <span>{{ gestion.accion }}</span>
+                </div>
+                <small>{{ gestion.nivelRiesgo }} &middot; {{ gestion.estadoEnvio }}</small>
+              </article>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </section>
 </section>

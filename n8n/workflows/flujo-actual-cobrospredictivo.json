@@ -225,7 +225,7 @@
               {
                 "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-accion",
                 "name": "accion",
-                "value": "Aviso preventivo antes del vencimiento",
+                "value": "Aviso preventivo",
                 "type": "string"
               },
               {
@@ -243,7 +243,7 @@
               {
                 "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Aviso preventivo para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' vence el ' + $json.cuota.fechaVencimiento + ' y mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + '.' }}",
+                "value": "={{ 'Aviso preventivo para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su cuota ' + $json.cuota.numeroCuota + ' vence el ' + $json.cuota.fechaVencimiento + '. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Realice el pago antes del vencimiento para evitar mora.' }}",
                 "type": "string"
               }
             ]
@@ -299,7 +299,7 @@
               {
                 "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Recordatorio de mora temprana para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y un saldo pendiente de $' + $json.cuota.saldoPendiente + '.' }}",
+                "value": "={{ 'Recordatorio de mora temprana para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': registra la cuota ' + $json.cuota.numeroCuota + ' vencida con ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Regularice el pago lo antes posible para evitar acumulacion de mora.' }}",
                 "type": "string"
               }
             ]
@@ -337,7 +337,7 @@
               {
                 "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-accion",
                 "name": "accion",
-                "value": "Seguimiento prioritario de cobranza",
+                "value": "Seguimiento prioritario",
                 "type": "string"
               },
               {
@@ -355,7 +355,7 @@
               {
                 "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Seguimiento prioritario para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Se recomienda contacto inmediato.' }}",
+                "value": "={{ 'Seguimiento prioritario para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su atraso requiere atencion. La cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y saldo pendiente de $' + $json.cuota.saldoPendiente + '. Comuniquese con el asesor de cobranza para coordinar una solucion de pago.' }}",
                 "type": "string"
               }
             ]
@@ -393,7 +393,7 @@
               {
                 "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-accion",
                 "name": "accion",
-                "value": "Revision critica y contacto urgente",
+                "value": "Revision critica",
                 "type": "string"
               },
               {
@@ -411,7 +411,7 @@
               {
                 "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Revision critica para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': la cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Requiere contacto urgente y revision interna.' }}",
+                "value": "={{ 'Revision critica para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su deuda presenta atraso critico. La cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y saldo pendiente de $' + $json.cuota.saldoPendiente + '. Se requiere contacto urgente con el area de cobranza.' }}",
                 "type": "string"
               }
             ]

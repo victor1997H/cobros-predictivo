@@ -102,11 +102,20 @@
 
         @if (cuotaSeleccionada(); as item) {
           <div class="selected-cuota">
-            <strong>{{ nombreCliente(item) }}</strong>
-            <span>
-              Riesgo {{ item.nivelRiesgo }} &middot; saldo pendiente
-              {{ formatCurrency(item.cuota.saldoPendiente) }}
-            </span>
+            <div>
+              <strong>{{ nombreCliente(item) }}</strong>
+              <span>
+                Riesgo {{ item.nivelRiesgo }} &middot; cuota #{{ item.cuota.numeroCuota }}
+              </span>
+            </div>
+            <div class="saldo-preview">
+              <span>Saldo actual</span>
+              <strong>{{ formatCurrency(item.cuota.saldoPendiente) }}</strong>
+            </div>
+            <div class="saldo-preview">
+              <span>Saldo despu&eacute;s del pago</span>
+              <strong>{{ formatCurrency(saldoDespuesDelPago()) }}</strong>
+            </div>
           </div>
         }
 

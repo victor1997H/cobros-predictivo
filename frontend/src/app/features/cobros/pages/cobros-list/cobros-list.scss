@@ -11,13 +11,13 @@
 
   h2 {
     margin: 0;
-    color: #102a43;
+    color: var(--cp-text);
     font-size: 26px;
   }
 
   p {
     margin: 4px 0 0;
-    color: #627d98;
+    color: var(--cp-text-muted);
   }
 }
 
@@ -29,8 +29,8 @@
 }
 
 .error {
-  color: #b42318;
-  background: #fef3f2;
+  color: var(--cp-danger);
+  background: var(--cp-danger-soft);
 }
 
 .summary-grid {
@@ -42,6 +42,9 @@
 .summary-card,
 .table-card {
   border-radius: 8px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  box-shadow: var(--cp-shadow);
 }
 
 .summary-card {
@@ -53,12 +56,12 @@
   }
 
   span {
-    color: #627d98;
+    color: var(--cp-text-muted);
     font-weight: 800;
   }
 
   strong {
-    color: #0b63ce;
+    color: var(--cp-primary);
     font-size: 34px;
     line-height: 1;
   }
@@ -73,13 +76,13 @@
 
   h3 {
     margin: 0;
-    color: #102a43;
+    color: var(--cp-text);
     font-size: 20px;
   }
 
   p {
     margin: 5px 0 0;
-    color: #627d98;
+    color: var(--cp-text-muted);
   }
 }
 
@@ -93,17 +96,17 @@
 .filter-button {
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid #bcccdc;
+  border: 1px solid var(--cp-border-strong);
   border-radius: 8px;
-  color: #334e68;
-  background: #ffffff;
+  color: var(--cp-text);
+  background: var(--cp-surface);
   cursor: pointer;
   font-weight: 800;
 
   &.active {
     color: #ffffff;
-    border-color: #0b63ce;
-    background: #0b63ce;
+    border-color: var(--cp-primary);
+    background: var(--cp-primary);
   }
 }
 
@@ -118,12 +121,12 @@ table {
 }
 
 th {
-  color: #486581;
+  color: var(--cp-text-muted);
   font-weight: 800;
 }
 
 td {
-  color: #102a43;
+  color: var(--cp-text);
 }
 
 td strong,
@@ -134,7 +137,7 @@ td small {
 
 td small {
   margin-top: 3px;
-  color: #627d98;
+  color: var(--cp-text-muted);
   font-size: 12px;
 }
 
@@ -150,30 +153,30 @@ td small {
 }
 
 .risk-bajo {
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--cp-success);
+  background: var(--cp-success-soft);
 }
 
 .risk-medio {
-  color: #92400e;
-  background: #fffbeb;
+  color: var(--cp-warning);
+  background: var(--cp-warning-soft);
 }
 
 .risk-alto {
-  color: #b42318;
-  background: #fef3f2;
+  color: var(--cp-danger);
+  background: var(--cp-danger-soft);
 }
 
 .risk-critico {
   color: #ffffff;
-  background: #7f1d1d;
+  background: var(--cp-critical);
 }
 
 .loading,
 .empty {
   margin: 0;
   padding: 24px;
-  color: #627d98;
+  color: var(--cp-text-muted);
   text-align: center;
 }
 

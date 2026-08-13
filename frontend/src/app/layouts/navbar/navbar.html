@@ -13,6 +13,15 @@
         </svg>
       </button>
 
+      <button
+        class="theme-button"
+        type="button"
+        [attr.aria-label]="isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
+        (click)="toggleTheme()"
+      >
+        {{ isDarkMode() ? 'Claro' : 'Oscuro' }}
+      </button>
+
       <div class="user-info">
         <div class="avatar">{{ getInitials(currentUser) }}</div>
 

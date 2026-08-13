@@ -106,6 +106,25 @@ export class NotificacionesService {
     return resultados;
   }
 
+  enviarCorreoSistema(data: {
+    destinatario: string;
+    asunto: string;
+    mensaje: string;
+  }): Promise<ResultadoNotificacion> {
+    return this.enviarCorreo({
+      canales: ['CORREO'],
+      clienteNombre: 'Usuario del sistema',
+      clienteEmail: data.destinatario,
+      clienteTelefono: '',
+      asunto: data.asunto,
+      mensaje: data.mensaje,
+      cuotaNumero: 0,
+      saldoPendiente: 0,
+      diasAtraso: 0,
+      accion: 'Correo del sistema',
+    });
+  }
+
   private async enviarCorreo(
     payload: NotificacionGestionPayload,
   ): Promise<ResultadoNotificacion> {

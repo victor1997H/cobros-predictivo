@@ -28,12 +28,86 @@ body {
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
   // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--cp-page-bg);
+  color: var(--cp-text);
   font: var(--mat-sys-body-medium);
 
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+}
+
+:root {
+  --cp-page-bg: #f4f7fb;
+  --cp-surface: #ffffff;
+  --cp-surface-muted: #f8fafc;
+  --cp-sidebar-bg: #102a43;
+  --cp-sidebar-active: #243b53;
+  --cp-border: #e2e8f0;
+  --cp-border-strong: #cbd5e1;
+  --cp-text: #102a43;
+  --cp-text-muted: #627d98;
+  --cp-text-soft: #829ab1;
+  --cp-primary: #0b63ce;
+  --cp-primary-strong: #084a9f;
+  --cp-success: #067647;
+  --cp-success-bg: #ecfdf3;
+  --cp-success-soft: #ecfdf3;
+  --cp-warning: #92400e;
+  --cp-warning-bg: #fffbeb;
+  --cp-warning-soft: #fffbeb;
+  --cp-danger: #b42318;
+  --cp-danger-bg: #fef3f2;
+  --cp-danger-soft: #fef3f2;
+  --cp-critical: #7f1d1d;
+  --cp-shadow: 0 10px 24px rgba(16, 42, 67, 0.08);
+  --cp-shadow-soft: 0 1px 3px rgba(16, 42, 67, 0.12);
+}
+
+body.theme-dark {
+  color-scheme: dark;
+  --cp-page-bg: #0f172a;
+  --cp-surface: #111c2e;
+  --cp-surface-muted: #172337;
+  --cp-sidebar-bg: #07111f;
+  --cp-sidebar-active: #1d2f48;
+  --cp-border: #26384f;
+  --cp-border-strong: #38506d;
+  --cp-text: #e5eef8;
+  --cp-text-muted: #a9b8ca;
+  --cp-text-soft: #7f93aa;
+  --cp-primary: #60a5fa;
+  --cp-primary-strong: #93c5fd;
+  --cp-success: #4ade80;
+  --cp-success-bg: rgba(34, 197, 94, 0.12);
+  --cp-success-soft: rgba(34, 197, 94, 0.12);
+  --cp-warning: #fbbf24;
+  --cp-warning-bg: rgba(251, 191, 36, 0.12);
+  --cp-warning-soft: rgba(251, 191, 36, 0.12);
+  --cp-danger: #fb7185;
+  --cp-danger-bg: rgba(251, 113, 133, 0.12);
+  --cp-danger-soft: rgba(251, 113, 133, 0.12);
+  --cp-critical: #fecaca;
+  --cp-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  --cp-shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+.mat-mdc-card {
+  background: var(--cp-surface) !important;
+  color: var(--cp-text) !important;
+  border: 1px solid var(--cp-border);
+  box-shadow: var(--cp-shadow-soft) !important;
 }
 /* You can add global styles to this file, and also import other style files */

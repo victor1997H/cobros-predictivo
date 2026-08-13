@@ -13,50 +13,54 @@
       </header>
 
       <section class="brand-copy">
-        <h1>Gesti&oacute;n Inteligente de Cartera con <span>IA &amp; N8N</span></h1>
+        <h1>Gesti&oacute;n Inteligente con <span>N8N</span></h1>
         <i aria-hidden="true"></i>
         <p>
-          Automatiza tus cobros, predice riesgos de impago y orquesta
-          notificaciones multicanal con la potencia de NestJS y N8N en una
-          interfaz armonizada.
+          Automatiza tus cobros, clasifica riesgos de impago y coordina
+          notificaciones por correo y WhatsApp desde una plataforma integrada
+          con NestJS, PostgreSQL y N8N.
         </p>
       </section>
 
-      <section class="automation-graphic" aria-hidden="true">
-        <div class="brain-card">
-          <svg viewBox="0 0 72 72" focusable="false">
-            <path d="M27 18a10 10 0 0 0-10 10v16a10 10 0 0 0 10 10h18a10 10 0 0 0 10-10V28a10 10 0 0 0-10-10H27Z" />
-            <path d="M32 22v28M40 22v28M24 32h24M24 40h24" />
-            <path d="M28 26a6 6 0 0 0-6 6M44 26a6 6 0 0 1 6 6M28 46a6 6 0 0 1-6-6M44 46a6 6 0 0 0 6-6" />
-          </svg>
-        </div>
+      <section class="login-highlights" aria-label="Capacidades principales">
+        <article>
+          <div class="highlight-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M5 7h14" />
+              <path d="M5 12h10" />
+              <path d="M5 17h7" />
+              <path d="m16 16 2 2 4-5" />
+            </svg>
+          </div>
+          <strong>Cartera ordenada</strong>
+          <span>Clientes, pr&eacute;stamos y cuotas conectados.</span>
+        </article>
 
-        <div class="node-lines">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+        <article>
+          <div class="highlight-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M12 4v16" />
+              <path d="M5 12h14" />
+              <path d="m8 8-4 4 4 4" />
+              <path d="m16 8 4 4-4 4" />
+            </svg>
+          </div>
+          <strong>Riesgo por cuota</strong>
+          <span>Bajo, medio, alto y cr&iacute;tico.</span>
+        </article>
 
-        <div class="service-icons">
-          <div>
+        <article>
+          <div class="highlight-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M4 7h16v11H4z" />
-              <path d="m4 8 8 6 8-6" />
+              <path d="M4 7h13v10H4z" />
+              <path d="m4 8 6.5 5L17 8" />
+              <path d="M18 17h4" />
+              <path d="M20 15v4" />
             </svg>
           </div>
-          <div>
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M6 17h12l-1.4-2.1V11a4.6 4.6 0 0 0-9.2 0v3.9L6 17Z" />
-              <path d="M10 19h4" />
-            </svg>
-          </div>
-          <div>
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M5 6h14v10H9l-4 3V6Z" />
-              <path d="M9 10h.1M12 10h.1M15 10h.1" />
-            </svg>
-          </div>
-        </div>
+          <strong>Notificaci&oacute;n real</strong>
+          <span>Registro, correo y WhatsApp.</span>
+        </article>
       </section>
     </aside>
 
@@ -71,7 +75,7 @@
 
         <header class="form-header">
           <h2>Iniciar Sesi&oacute;n</h2>
-          <p>Introduce tus credenciales de administrador de cartera.</p>
+          <p>Accede al panel de administraci&oacute;n de cartera.</p>
         </header>
 
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
@@ -108,7 +112,17 @@
           <label class="field-group">
             <span class="password-label">
               CONTRASE&Ntilde;A
-              <a href="#" tabindex="-1">&iquest;Olvid&oacute; su contrase&ntilde;a?</a>
+              <button
+                type="button"
+                [disabled]="isRecoveringPassword"
+                (click)="requestPasswordRecovery()"
+              >
+                @if (isRecoveringPassword) {
+                  Enviando enlace...
+                } @else {
+                  &iquest;Olvid&oacute; su contrase&ntilde;a?
+                }
+              </button>
             </span>
             <div class="field-control">
               <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -116,16 +130,28 @@
                 <path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" />
               </svg>
               <input
-                type="password"
+                [type]="showPassword ? 'text' : 'password'"
                 formControlName="password"
                 autocomplete="current-password"
                 placeholder="********"
               />
-              <svg class="eye-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                <path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z" />
-                <circle cx="12" cy="12" r="2.4" />
-                <path d="m4 4 16 16" />
-              </svg>
+              <button
+                class="password-toggle"
+                type="button"
+                [attr.aria-label]="showPassword ? 'Ocultar contrase\u00f1a' : 'Mostrar contrase\u00f1a'"
+                (click)="togglePasswordVisibility()"
+              >
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                  @if (showPassword) {
+                    <path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z" />
+                    <circle cx="12" cy="12" r="2.4" />
+                  } @else {
+                    <path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z" />
+                    <circle cx="12" cy="12" r="2.4" />
+                    <path d="m4 4 16 16" />
+                  }
+                </svg>
+              </button>
             </div>
           </label>
 
@@ -142,6 +168,10 @@
 
           @if (errorMessage) {
             <p class="login-error">{{ errorMessage }}</p>
+          }
+
+          @if (infoMessage) {
+            <p class="login-info">{{ infoMessage }}</p>
           }
 
           <button

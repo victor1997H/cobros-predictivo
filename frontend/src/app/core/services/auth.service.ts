@@ -13,6 +13,15 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
 export interface AuthUser {
   id: number;
   nombre: string;
@@ -48,6 +57,24 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data);
+  }
+
+  forgotPassword(
+    data: ForgotPasswordRequest,
+  ): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.apiUrl}/forgot-password`,
+      data,
+    );
+  }
+
+  resetPassword(
+    data: ResetPasswordRequest,
+  ): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.apiUrl}/reset-password`,
+      data,
+    );
   }
 
   setCurrentUser(user: AuthUser, remember: boolean): void {

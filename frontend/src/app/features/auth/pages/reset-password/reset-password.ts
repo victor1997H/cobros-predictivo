@@ -2,55 +2,49 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-register',
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
-  templateUrl: './register.html',
-  styleUrl: './register.scss',
+  selector: 'app-reset-password',
+  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule],
+  templateUrl: './reset-password.html',
+  styleUrl: './reset-password.scss',
 })
-export class Register {
+export class ResetPassword {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly registerForm = this.formBuilder.nonNullable.group({
-    nombre: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
+  readonly token = new URLSearchParams(window.location.search).get('token') ?? '';
+
+  readonly form = this.formBuilder.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
   });
 
   isLoading = false;
+  showPassword = false;
   errorMessage = '';
   successMessage = '';
-  showPassword = false;
 
   onSubmit(): void {
-    if (this.registerForm.invalid) {
-      this.registerForm.markAllAsTouched();
+    if (!this.token) {
+      this.errorMessage = 'El enlace de recuperacion no es valido.';
       return;
     }
 
-    const { nombre, email, password, confirmPassword } =
-      this.registerForm.getRawValue();
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const { password, confirmPassword } = this.form.getRawValue();
 
     if (password !== confirmPassword) {
       this.errorMessage = 'Las contrasenas no coinciden.';
-      this.successMessage = '';
       return;
     }
 
@@ -59,17 +53,12 @@ export class Register {
     this.successMessage = '';
 
     this.authService
-      .register({ nombre, email, password })
+      .resetPassword({ token: this.token, password })
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
         next: (response) => {
-          if (!response.success) {
-            this.errorMessage = response.message;
-            return;
-          }
-
-          this.successMessage = 'Cuenta creada correctamente. Inicia sesion.';
-          setTimeout(() => void this.router.navigate(['/login']), 1200);
+          this.successMessage = response.message;
+          setTimeout(() => void this.router.navigate(['/login']), 1600);
         },
         error: (error: unknown) => {
           this.errorMessage = this.resolveErrorMessage(error);
@@ -101,6 +90,6 @@ export class Register {
       }
     }
 
-    return 'No se pudo registrar el usuario.';
+    return 'No se pudo actualizar la contrasena.';
   }
 }

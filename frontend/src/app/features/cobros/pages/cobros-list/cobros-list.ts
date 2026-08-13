@@ -35,6 +35,7 @@ export class CobrosList implements OnInit {
     'saldoPendiente',
     'diasAtraso',
     'nivelRiesgo',
+    'accion',
     'tipoGestion',
   ];
 
@@ -111,6 +112,17 @@ export class CobrosList implements OnInit {
 
   tipoGestionLabel(item: CobroGestion): string {
     return item.tipoGestion === 'VENCE_MANANA' ? 'Vence ma\u00f1ana' : 'Vencida';
+  }
+
+  accionSugerida(item: CobroGestion): string {
+    const acciones: Record<NivelRiesgo, string> = {
+      BAJO: 'Aviso preventivo',
+      MEDIO: 'Recordatorio de mora',
+      ALTO: 'Contacto con asesor',
+      CRITICO: 'Atencion urgente',
+    };
+
+    return acciones[item.nivelRiesgo];
   }
 
   formatCurrency(value: number): string {

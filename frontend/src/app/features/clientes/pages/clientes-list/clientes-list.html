@@ -18,6 +18,29 @@
     <p class="alert error">{{ errorMessage() }}</p>
   }
 
+  <section class="summary-grid" aria-label="Resumen de clientes">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Total clientes</span>
+        <strong>{{ clientes().length }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Clientes activos</span>
+        <strong>{{ clientesActivos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card danger">
+      <mat-card-content>
+        <span>Clientes inactivos</span>
+        <strong>{{ clientesInactivos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
   @if (showForm()) {
     <mat-card class="form-card">
       <mat-card-header>
@@ -38,13 +61,32 @@
 
   <mat-card class="table-card">
     <mat-card-content>
+      <div class="table-toolbar">
+        <div>
+          <h3>Cartera de clientes</h3>
+          <p>Contactos disponibles para cobros, pagos y automatizaci&oacute;n n8n.</p>
+        </div>
+
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Buscar cliente</mat-label>
+          <input
+            matInput
+            type="search"
+            [value]="searchTerm()"
+            (input)="onSearch($any($event.target).value)"
+          />
+        </mat-form-field>
+      </div>
+
       @if (isLoading()) {
         <p class="loading">Cargando clientes...</p>
       } @else if (clientes().length === 0) {
         <p class="empty">No existen clientes registrados.</p>
+      } @else if (clientesFiltrados().length === 0) {
+        <p class="empty">No hay clientes que coincidan con la b&uacute;squeda.</p>
       } @else {
         <div class="table-wrapper">
-          <table mat-table [dataSource]="clientes()">
+          <table mat-table [dataSource]="clientesFiltrados()">
             <ng-container matColumnDef="id">
               <th mat-header-cell *matHeaderCellDef>ID</th>
               <td mat-cell *matCellDef="let cliente">{{ cliente.id }}</td>

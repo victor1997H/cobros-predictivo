@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { finalize } from 'rxjs';
 
@@ -11,7 +20,14 @@ import { Cliente, ClientePayload } from '../../models/cliente.model';
 @Component({
   selector: 'app-clientes-list',
   standalone: true,
-  imports: [MatButtonModule, MatCardModule, MatTableModule, ClienteForm],
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    ClienteForm,
+  ],
   templateUrl: './clientes-list.html',
   styleUrl: './clientes-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,12 +46,39 @@ export class ClientesList implements OnInit {
   ];
 
   readonly clientes = signal<Cliente[]>([]);
+  readonly searchTerm = signal('');
   readonly selectedCliente = signal<Cliente | null>(null);
   readonly showForm = signal(false);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly feedbackMessage = signal('');
   readonly errorMessage = signal('');
+  readonly clientesFiltrados = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+
+    if (!term) {
+      return this.clientes();
+    }
+
+    return this.clientes().filter((cliente) =>
+      [
+        cliente.nombres,
+        cliente.apellidos,
+        cliente.identificacion,
+        cliente.email,
+        cliente.telefono,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(term),
+    );
+  });
+  readonly clientesActivos = computed(
+    () => this.clientes().filter((cliente) => cliente.estado).length,
+  );
+  readonly clientesInactivos = computed(
+    () => this.clientes().filter((cliente) => !cliente.estado).length,
+  );
 
   ngOnInit(): void {
     this.loadClientes();
@@ -129,6 +172,10 @@ export class ClientesList implements OnInit {
 
   fullName(cliente: Cliente): string {
     return `${cliente.nombres} ${cliente.apellidos}`;
+  }
+
+  onSearch(value: string): void {
+    this.searchTerm.set(value);
   }
 
   private clearMessages(): void {

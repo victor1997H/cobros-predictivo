@@ -1,11 +1,29 @@
 <section class="register-page">
   <mat-card class="register-card">
-    <mat-card-header>
-      <mat-card-title>Crear cuenta</mat-card-title>
-      <mat-card-subtitle>Sistema de Gesti&oacute;n de Cobros Predictivo</mat-card-subtitle>
-    </mat-card-header>
+    <header class="register-header">
+      <div class="brand-mark">CP</div>
+      <div>
+        <h1>Crear cuenta de operador</h1>
+        <p>Acceso para administrar cartera, pagos y automatizaciones de cobranza.</p>
+      </div>
+    </header>
 
     <mat-card-content>
+      <section class="register-summary" aria-label="Alcance de la cuenta">
+        <article>
+          <strong>Clientes</strong>
+          <span>Registro y seguimiento de cartera.</span>
+        </article>
+        <article>
+          <strong>Cobros</strong>
+          <span>Riesgo y gesti&oacute;n autom&aacute;tica.</span>
+        </article>
+        <article>
+          <strong>n8n</strong>
+          <span>Correo y WhatsApp integrados.</span>
+        </article>
+      </section>
+
       <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="outline">
           <mat-label>Nombre</mat-label>
@@ -30,27 +48,63 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" formControlName="password" autocomplete="new-password" />
+          <mat-label>Contrase&ntilde;a</mat-label>
+          <input
+            matInput
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="new-password"
+          />
 
           @if (registerForm.controls.password.hasError('required')) {
-            <mat-error>El password es obligatorio</mat-error>
+            <mat-error>La contrase&ntilde;a es obligatoria</mat-error>
           }
 
           @if (registerForm.controls.password.hasError('minlength')) {
-            <mat-error>Minimo 6 caracteres</mat-error>
+            <mat-error>M&iacute;nimo 6 caracteres</mat-error>
           }
         </mat-form-field>
 
+        <mat-form-field appearance="outline">
+          <mat-label>Confirmar contrase&ntilde;a</mat-label>
+          <input
+            matInput
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+
+          @if (registerForm.controls.confirmPassword.hasError('required')) {
+            <mat-error>Confirma la contrase&ntilde;a</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          class="password-visibility"
+          mat-button
+          type="button"
+          (click)="togglePasswordVisibility()"
+        >
+          @if (showPassword) {
+            Ocultar contrase&ntilde;as
+          } @else {
+            Ver contrase&ntilde;as
+          }
+        </button>
+
         @if (errorMessage) {
           <p class="register-error">{{ errorMessage }}</p>
+        }
+
+        @if (successMessage) {
+          <p class="register-success">{{ successMessage }}</p>
         }
 
         <button mat-flat-button color="primary" type="submit" [disabled]="isLoading">
           {{ isLoading ? 'Registrando...' : 'Registrarse' }}
         </button>
 
-        <a mat-button routerLink="/login">Volver al login</a>
+        <a mat-button routerLink="/login">Volver a iniciar sesi&oacute;n</a>
       </form>
     </mat-card-content>
   </mat-card>

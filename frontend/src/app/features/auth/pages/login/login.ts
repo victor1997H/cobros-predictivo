@@ -36,7 +36,10 @@ export class Login {
   });
 
   isLoading = false;
+  isRecoveringPassword = false;
   errorMessage = '';
+  infoMessage = '';
+  showPassword = false;
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
@@ -46,6 +49,7 @@ export class Login {
 
     this.isLoading = true;
     this.errorMessage = '';
+    this.infoMessage = '';
 
     const { email, password, remember } = this.loginForm.getRawValue();
 
@@ -54,8 +58,6 @@ export class Login {
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
         next: (response) => {
-          console.log(response);
-
           if (!response.success) {
             this.errorMessage = response.message;
             return;
@@ -70,7 +72,37 @@ export class Login {
           void this.router.navigate(['/dashboard']);
         },
         error: (error: unknown) => {
-          console.error(error);
+          this.errorMessage = this.resolveErrorMessage(error);
+        },
+      });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  requestPasswordRecovery(): void {
+    const emailControl = this.loginForm.controls.email;
+    emailControl.markAsTouched();
+
+    if (emailControl.invalid) {
+      this.errorMessage = 'Ingresa un email valido para recuperar la contrasena.';
+      this.infoMessage = '';
+      return;
+    }
+
+    this.isRecoveringPassword = true;
+    this.errorMessage = '';
+    this.infoMessage = '';
+
+    this.authService
+      .forgotPassword({ email: emailControl.value })
+      .pipe(finalize(() => (this.isRecoveringPassword = false)))
+      .subscribe({
+        next: (response) => {
+          this.infoMessage = response.message;
+        },
+        error: (error: unknown) => {
           this.errorMessage = this.resolveErrorMessage(error);
         },
       });

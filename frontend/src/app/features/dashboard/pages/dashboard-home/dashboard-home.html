@@ -19,18 +19,28 @@
     </div>
 
     <div class="card">
-      <span>Clientes activos</span>
-      <h1>{{ clientesActivos() }}</h1>
+      <span>Saldo en gesti&oacute;n</span>
+      <h1>{{ formatCurrency(saldoEnGestion()) }}</h1>
     </div>
 
     <div class="card danger">
-      <span>Clientes inactivos</span>
-      <h1>{{ clientesInactivos() }}</h1>
+      <span>Riesgo cr&iacute;tico</span>
+      <h1>{{ riesgoCritico() }}</h1>
     </div>
 
     <div class="card">
-      <span>&Uacute;ltimos registros</span>
-      <h1>{{ ultimosClientes().length }}</h1>
+      <span>Total recaudado</span>
+      <h1>{{ formatCurrency(totalRecaudado()) }}</h1>
+    </div>
+
+    <div class="card">
+      <span>Cuotas vencidas</span>
+      <h1>{{ cuotasVencidas() }}</h1>
+    </div>
+
+    <div class="card">
+      <span>Gestiones n8n</span>
+      <h1>{{ gestiones().length }}</h1>
     </div>
   </div>
 
@@ -70,12 +80,22 @@
     </div>
 
     <div class="activity-card">
-      <h3>Sesi&oacute;n actual</h3>
+      <h3>&Uacute;ltimas gestiones n8n</h3>
 
-      @if (currentUser$ | async; as currentUser) {
-        <p><strong>Usuario:</strong> {{ currentUser.nombre }}</p>
-        <p><strong>Email:</strong> {{ currentUser.email }}</p>
-        <p><strong>Estado:</strong> Autenticado</p>
+      @if (isLoading()) {
+        <p>Cargando actividad...</p>
+      } @else if (ultimasGestiones().length === 0) {
+        <p>No existen gestiones registradas.</p>
+      } @else {
+        <div class="activity-list">
+          @for (gestion of ultimasGestiones(); track gestion.id) {
+            <article>
+              <strong>{{ gestion.clienteNombre }}</strong>
+              <span>{{ gestion.accion }}</span>
+              <small>{{ gestion.nivelRiesgo }} &middot; {{ gestion.estadoEnvio }}</small>
+            </article>
+          }
+        </div>
       }
     </div>
   </div>

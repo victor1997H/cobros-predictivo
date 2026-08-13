@@ -82,6 +82,16 @@ export class PagosList implements OnInit {
   readonly cuotaSeleccionada = computed(() =>
     this.cuotasDisponibles().find((item) => item.cuota.id === this.selectedCuotaId()),
   );
+  saldoDespuesDelPago(): number {
+    const cuota = this.cuotaSeleccionada();
+    const monto = Number(this.form.controls.monto.value ?? 0);
+
+    if (!cuota) {
+      return 0;
+    }
+
+    return Math.max(cuota.cuota.saldoPendiente - monto, 0);
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -139,9 +149,17 @@ export class PagosList implements OnInit {
       return;
     }
 
+    const cuota = this.cuotaSeleccionada();
+    const monto = Number(value.monto);
+
+    if (cuota && monto > cuota.cuota.saldoPendiente) {
+      this.errorMessage.set('El monto pagado no puede superar el saldo pendiente de la cuota.');
+      return;
+    }
+
     const payload: PagoPayload = {
       cuotaId: Number(value.cuotaId),
-      monto: Number(value.monto),
+      monto,
       metodoPago: value.metodoPago ?? 'EFECTIVO',
       referencia: value.referencia?.trim() || null,
       observacion: value.observacion?.trim() || null,

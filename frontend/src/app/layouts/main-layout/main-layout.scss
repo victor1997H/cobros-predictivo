@@ -6,6 +6,7 @@
 .app-container {
   display: flex;
   min-height: 100vh;
+  background: var(--cp-page-bg);
 }
 
 .main-content {
@@ -18,5 +19,15 @@
 .content {
   flex: 1;
   padding: 30px;
-  background: #f5f7fa;
+  background: var(--cp-page-bg);
+}
+
+@media (max-width: 920px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 18px;
+  }
 }

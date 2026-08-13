@@ -5,6 +5,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { AuthService, AuthUser } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface PageHeader {
   title: string;
@@ -46,10 +47,12 @@ const PAGE_HEADERS: Record<string, PageHeader> = {
 })
 export class Navbar {
   private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly currentUser$ = this.authService.currentUser$;
+  readonly isDarkMode = this.themeService.isDarkMode;
   readonly pageHeader = signal(this.resolvePageHeader(this.router.url));
 
   constructor() {
@@ -79,6 +82,10 @@ export class Navbar {
   logout(): void {
     this.authService.clearSession();
     void this.router.navigate(['/login']);
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleMode();
   }
 
   private resolvePageHeader(url: string): PageHeader {

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { Login } from './features/auth/pages/login/login';
 import { Register } from './features/auth/pages/register/register';
+import { ResetPassword } from './features/auth/pages/reset-password/reset-password';
 import { DashboardHome } from './features/dashboard/pages/dashboard-home/dashboard-home';
 import { ClientesList } from './features/clientes/pages/clientes-list/clientes-list';
 import { CobrosList } from './features/cobros/pages/cobros-list/cobros-list';
@@ -29,6 +30,10 @@ export const routes: Routes = [
       {
         path: 'register',
         component: Register,
+      },
+      {
+        path: 'reset-password',
+        component: ResetPassword,
       },
     ],
   },
