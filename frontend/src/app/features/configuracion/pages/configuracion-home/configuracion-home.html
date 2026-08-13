@@ -64,35 +64,17 @@
   <section class="settings-grid">
     <mat-card class="config-card">
       <mat-card-content>
-        <h3>Apariencia</h3>
-        <p class="setting-text">Selecciona el modo visual para la sesi&oacute;n de trabajo.</p>
-
-        <div class="theme-options" role="group" aria-label="Modo visual">
-          <button
-            type="button"
-            [class.active]="currentTheme() === 'light'"
-            (click)="setTheme('light')"
-          >
-            Modo claro
-          </button>
-          <button
-            type="button"
-            [class.active]="currentTheme() === 'dark'"
-            (click)="setTheme('dark')"
-          >
-            Modo oscuro
-          </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="config-card">
-      <mat-card-content>
         <h3>Automatizaci&oacute;n</h3>
         <p class="setting-text">
-          n8n consulta cuotas, clasifica riesgos y registra gestiones en el backend.
+          n8n consulta cuotas, clasifica riesgos, env&iacute;a notificaciones y registra
+          cada gesti&oacute;n en el backend para seguimiento.
         </p>
-        <span class="integration-pill">n8n + Correo + WhatsApp</span>
+        <div class="integration-list" aria-label="Canales de automatizacion">
+          <span class="integration-pill">n8n</span>
+          <span class="integration-pill">Correo</span>
+          <span class="integration-pill">WhatsApp</span>
+          <span class="integration-pill">Registro backend</span>
+        </div>
       </mat-card-content>
     </mat-card>
   </section>

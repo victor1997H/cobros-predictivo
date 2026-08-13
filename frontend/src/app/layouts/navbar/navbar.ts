@@ -1,10 +1,11 @@
-import { AsyncPipe } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { AsyncPipe, DatePipe } from '@angular/common';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { AuthService, AuthUser } from '../../core/services/auth.service';
+import { NotificacionTiempoRealService } from '../../core/services/notificacion-tiempo-real.service';
 import { ThemeService } from '../../core/services/theme.service';
 
 interface PageHeader {
@@ -41,19 +42,26 @@ const PAGE_HEADERS: Record<string, PageHeader> = {
 
 @Component({
   selector: 'app-navbar',
-  imports: [AsyncPipe],
+  imports: [AsyncPipe, DatePipe, RouterLink],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
 })
-export class Navbar {
+export class Navbar implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly notificacionService = inject(NotificacionTiempoRealService);
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly currentUser$ = this.authService.currentUser$;
   readonly isDarkMode = this.themeService.isDarkMode;
+  readonly notificaciones = this.notificacionService.notificaciones;
+  readonly unreadCount = this.notificacionService.unreadCount;
+  readonly notificationsLoading = this.notificacionService.isLoading;
+  readonly notificationsError = this.notificacionService.errorMessage;
   readonly pageHeader = signal(this.resolvePageHeader(this.router.url));
+  readonly isUserMenuOpen = signal(false);
+  readonly isNotificationsOpen = signal(false);
 
   constructor() {
     this.router.events
@@ -63,7 +71,13 @@ export class Navbar {
       )
       .subscribe((event) => {
         this.pageHeader.set(this.resolvePageHeader(event.urlAfterRedirects));
+        this.isUserMenuOpen.set(false);
+        this.isNotificationsOpen.set(false);
       });
+  }
+
+  ngOnInit(): void {
+    this.notificacionService.start();
   }
 
   getInitials(user: AuthUser | null): string {
@@ -86,6 +100,32 @@ export class Navbar {
 
   toggleTheme(): void {
     this.themeService.toggleMode();
+  }
+
+  toggleUserMenu(): void {
+    this.isUserMenuOpen.update((isOpen) => !isOpen);
+    this.isNotificationsOpen.set(false);
+  }
+
+  closeUserMenu(): void {
+    this.isUserMenuOpen.set(false);
+  }
+
+  toggleNotifications(): void {
+    this.isNotificationsOpen.update((isOpen) => {
+      const nextState = !isOpen;
+
+      if (nextState) {
+        this.notificacionService.markAsRead();
+      }
+
+      return nextState;
+    });
+    this.isUserMenuOpen.set(false);
+  }
+
+  refreshNotifications(): void {
+    this.notificacionService.refresh();
   }
 
   private resolvePageHeader(url: string): PageHeader {

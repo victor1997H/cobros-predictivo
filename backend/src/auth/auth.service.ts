@@ -80,11 +80,14 @@ export class AuthService {
     user.resetPasswordExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await this.userRepository.save(user);
 
-    await this.notificacionesService.enviarCorreoSistema({
-      destinatario: user.email,
-      asunto: 'CobrosPredictivo - restablecer contrasena',
-      mensaje: this.buildResetPasswordMessage(user.nombre, token),
-    });
+    await this.withTimeout(
+      this.notificacionesService.enviarCorreoSistema({
+        destinatario: user.email,
+        asunto: 'CobrosPredictivo - restablecer contrasena',
+        mensaje: this.buildResetPasswordMessage(user.nombre, token),
+      }),
+      12000,
+    ).catch(() => undefined);
 
     return response;
   }
@@ -148,5 +151,17 @@ export class AuthService {
       this.configService.get<string>('FRONTEND_URL') ??
       'http://localhost:4200'
     ).replace(/\/$/, '');
+  }
+
+  private withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        setTimeout(
+          () => reject(new Error('Tiempo maximo de correo excedido')),
+          milliseconds,
+        );
+      }),
+    ]);
   }
 }

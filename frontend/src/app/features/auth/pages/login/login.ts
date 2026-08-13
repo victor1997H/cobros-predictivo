@@ -6,7 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, timeout, TimeoutError } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -35,10 +35,17 @@ export class Login {
     remember: [true],
   });
 
+  readonly recoveryForm = this.formBuilder.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+
   isLoading = false;
   isRecoveringPassword = false;
+  isRecoveryMode = false;
   errorMessage = '';
   infoMessage = '';
+  recoveryErrorMessage = '';
+  recoverySuccessMessage = '';
   showPassword = false;
 
   onSubmit(): void {
@@ -81,34 +88,59 @@ export class Login {
     this.showPassword = !this.showPassword;
   }
 
+  openRecoveryMode(): void {
+    this.recoveryForm.controls.email.setValue(this.loginForm.controls.email.value);
+    this.recoveryForm.markAsUntouched();
+    this.errorMessage = '';
+    this.infoMessage = '';
+    this.recoveryErrorMessage = '';
+    this.recoverySuccessMessage = '';
+    this.isRecoveryMode = true;
+  }
+
+  closeRecoveryMode(): void {
+    this.isRecoveryMode = false;
+    this.isRecoveringPassword = false;
+    this.recoveryErrorMessage = '';
+    this.recoverySuccessMessage = '';
+  }
+
   requestPasswordRecovery(): void {
-    const emailControl = this.loginForm.controls.email;
+    const emailControl = this.recoveryForm.controls.email;
     emailControl.markAsTouched();
 
     if (emailControl.invalid) {
-      this.errorMessage = 'Ingresa un email valido para recuperar la contrasena.';
-      this.infoMessage = '';
+      this.recoveryErrorMessage =
+        'Ingresa un correo valido para enviar el enlace de recuperacion.';
+      this.recoverySuccessMessage = '';
       return;
     }
 
     this.isRecoveringPassword = true;
-    this.errorMessage = '';
-    this.infoMessage = '';
+    this.recoveryErrorMessage = '';
+    this.recoverySuccessMessage = '';
 
     this.authService
       .forgotPassword({ email: emailControl.value })
-      .pipe(finalize(() => (this.isRecoveringPassword = false)))
+      .pipe(
+        timeout(15000),
+        finalize(() => (this.isRecoveringPassword = false)),
+      )
       .subscribe({
         next: (response) => {
-          this.infoMessage = response.message;
+          this.recoverySuccessMessage = response.message;
         },
         error: (error: unknown) => {
-          this.errorMessage = this.resolveErrorMessage(error);
+          this.recoveryErrorMessage = this.resolveErrorMessage(error);
         },
       });
   }
 
   private resolveErrorMessage(error: unknown): string {
+    if (error instanceof TimeoutError) {
+      return 'El servidor tardo demasiado en responder. Intenta nuevamente en unos segundos.';
+    }
+
     if (
       typeof error === 'object' &&
       error !== null &&

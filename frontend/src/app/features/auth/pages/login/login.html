@@ -78,6 +78,7 @@
           <p>Accede al panel de administraci&oacute;n de cartera.</p>
         </header>
 
+        @if (!isRecoveryMode) {
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <label class="field-group">
             <span>USUARIO / EMAIL</span>
@@ -114,14 +115,9 @@
               CONTRASE&Ntilde;A
               <button
                 type="button"
-                [disabled]="isRecoveringPassword"
-                (click)="requestPasswordRecovery()"
+                (click)="openRecoveryMode()"
               >
-                @if (isRecoveringPassword) {
-                  Enviando enlace...
-                } @else {
-                  &iquest;Olvid&oacute; su contrase&ntilde;a?
-                }
+                &iquest;Olvid&oacute; su contrase&ntilde;a?
               </button>
             </span>
             <div class="field-control">
@@ -193,6 +189,83 @@
             <a routerLink="/register">Reg&iacute;strate gratis</a>
           </p>
         </form>
+        } @else {
+        <form
+          class="login-form recovery-form"
+          [formGroup]="recoveryForm"
+          (ngSubmit)="requestPasswordRecovery()"
+        >
+          <div class="recovery-heading">
+            <h3>Recuperar contrase&ntilde;a</h3>
+            <p>
+              Escribe el correo registrado. Si existe en el sistema, enviaremos
+              un enlace seguro para crear una nueva contrase&ntilde;a.
+            </p>
+          </div>
+
+          <label class="field-group">
+            <span>CORREO REGISTRADO</span>
+            <div class="field-control">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 7.5h16v9H4z" />
+                <path d="m4 8 8 5.5L20 8" />
+              </svg>
+              <input
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="usuario@correo.com"
+              />
+            </div>
+          </label>
+
+          @if (
+            recoveryForm.controls.email.touched &&
+            recoveryForm.controls.email.hasError('required')
+          ) {
+            <p class="field-error">El correo es obligatorio</p>
+          }
+
+          @if (
+            recoveryForm.controls.email.touched &&
+            recoveryForm.controls.email.hasError('email')
+          ) {
+            <p class="field-error">Ingresa un correo v&aacute;lido</p>
+          }
+
+          @if (recoveryErrorMessage) {
+            <p class="login-error">{{ recoveryErrorMessage }}</p>
+          }
+
+          @if (recoverySuccessMessage) {
+            <p class="login-info">{{ recoverySuccessMessage }}</p>
+          }
+
+          <button
+            mat-flat-button
+            class="primary-action"
+            type="submit"
+            [disabled]="isRecoveringPassword"
+          >
+            <span>
+              {{ isRecoveringPassword ? 'ENVIANDO...' : 'ENVIAR ENLACE' }}
+            </span>
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M4 12h15" />
+              <path d="m13 6 6 6-6 6" />
+            </svg>
+          </button>
+
+          <button
+            class="secondary-action"
+            type="button"
+            [disabled]="isRecoveringPassword"
+            (click)="closeRecoveryMode()"
+          >
+            Volver al inicio de sesi&oacute;n
+          </button>
+        </form>
+        }
       </div>
     </section>
   </mat-card>

@@ -6,32 +6,112 @@
 
   @if (currentUser$ | async; as currentUser) {
     <div class="navbar-actions">
-      <button class="notification-button" type="button" aria-label="Notificaciones">
-        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-          <path d="M6 17h12l-1.4-2.1V11a4.6 4.6 0 0 0-9.2 0v3.9L6 17Z" />
-          <path d="M10 19h4" />
-        </svg>
-      </button>
+      <div class="notifications-area">
+        <button
+          class="notification-button"
+          type="button"
+          aria-label="Notificaciones"
+          [class.has-unread]="unreadCount() > 0"
+          (click)="toggleNotifications()"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="M6 17h12l-1.4-2.1V11a4.6 4.6 0 0 0-9.2 0v3.9L6 17Z" />
+            <path d="M10 19h4" />
+          </svg>
 
-      <button
-        class="theme-button"
-        type="button"
-        [attr.aria-label]="isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
-        (click)="toggleTheme()"
-      >
-        {{ isDarkMode() ? 'Claro' : 'Oscuro' }}
-      </button>
+          @if (unreadCount() > 0) {
+            <span class="notification-count">{{ unreadCount() }}</span>
+          }
+        </button>
 
-      <div class="user-info">
-        <div class="avatar">{{ getInitials(currentUser) }}</div>
+        @if (isNotificationsOpen()) {
+          <section class="notifications-panel" aria-label="Notificaciones del sistema">
+            <header>
+              <div>
+                <strong>Notificaciones</strong>
+                <span>Gestiones registradas por n8n</span>
+              </div>
 
-        <div>
-          <strong>{{ currentUser.nombre }}</strong>
-          <span>{{ currentUser.email }}</span>
-        </div>
+              <button type="button" (click)="refreshNotifications()">
+                Actualizar
+              </button>
+            </header>
+
+            @if (notificationsLoading()) {
+              <p class="empty-state">Actualizando notificaciones...</p>
+            } @else if (notificationsError()) {
+              <p class="error-state">{{ notificationsError() }}</p>
+            } @else if (notificaciones().length === 0) {
+              <p class="empty-state">Aun no hay gestiones registradas.</p>
+            } @else {
+              <div class="notification-list">
+                @for (notificacion of notificaciones(); track notificacion.id) {
+                  <article>
+                    <span class="risk-dot">{{ notificacion.riesgo }}</span>
+                    <div>
+                      <strong>{{ notificacion.titulo }}</strong>
+                      <p>{{ notificacion.detalle }}</p>
+                      <small>{{ notificacion.fecha | date: 'dd/MM/yyyy HH:mm' }}</small>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+        }
       </div>
 
-      <button class="logout-button" type="button" (click)="logout()">Salir</button>
+      <div class="user-menu-area">
+        <button
+          class="user-menu-button"
+          type="button"
+          aria-label="Abrir configuracion de usuario"
+          [attr.aria-expanded]="isUserMenuOpen()"
+          (click)="toggleUserMenu()"
+        >
+          <div class="avatar">{{ getInitials(currentUser) }}</div>
+          <div>
+            <strong>{{ currentUser.nombre }}</strong>
+            <span>{{ currentUser.email }}</span>
+          </div>
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="m7 10 5 5 5-5" />
+          </svg>
+        </button>
+
+        @if (isUserMenuOpen()) {
+          <section class="user-dropdown" aria-label="Configuracion de usuario">
+            <header>
+              <div class="avatar large">{{ getInitials(currentUser) }}</div>
+              <div>
+                <strong>{{ currentUser.nombre }}</strong>
+                <span>{{ currentUser.email }}</span>
+              </div>
+            </header>
+
+            <div class="dropdown-section">
+              <span class="section-label">Apariencia</span>
+              <button class="theme-row" type="button" (click)="toggleTheme()">
+                <span>{{ isDarkMode() ? 'Modo oscuro activo' : 'Modo claro activo' }}</span>
+                <strong>{{ isDarkMode() ? 'Cambiar a claro' : 'Cambiar a oscuro' }}</strong>
+              </button>
+            </div>
+
+            <a
+              class="dropdown-link"
+              routerLink="/configuracion"
+              (click)="closeUserMenu()"
+            >
+              Configuracion del sistema
+            </a>
+
+            <button class="dropdown-danger" type="button" (click)="logout()">
+              Cerrar sesion
+            </button>
+          </section>
+        }
+      </div>
+
     </div>
   }
 </header>

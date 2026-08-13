@@ -40,19 +40,5 @@
     </a>
   </nav>
 
-  @if (currentUser$ | async; as currentUser) {
-    <section class="sidebar-user">
-      <div class="sidebar-avatar">{{ getInitials(currentUser) }}</div>
-      <div>
-        <strong>{{ currentUser.nombre }}</strong>
-        <span>{{ currentUser.email }}</span>
-      </div>
-    </section>
-  }
-
-  <button class="sidebar-logout" type="button" (click)="logout()">
-    Cerrar sesi&oacute;n
-  </button>
-
   <div class="sidebar-footer">Versi&oacute;n 1.0.0</div>
 </aside>

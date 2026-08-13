@@ -15,7 +15,6 @@ import { ClienteService } from '../../../../core/services/cliente.service';
 import { CobroService } from '../../../../core/services/cobro.service';
 import { GestionCobranzaService } from '../../../../core/services/gestion-cobranza.service';
 import { PagoService } from '../../../../core/services/pago.service';
-import { ThemeMode, ThemeService } from '../../../../core/services/theme.service';
 
 type EstadoServicio = 'OPERATIVO' | 'ERROR';
 
@@ -39,11 +38,9 @@ export class ConfiguracionHome implements OnInit {
   private readonly cobroService = inject(CobroService);
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
   private readonly pagoService = inject(PagoService);
-  private readonly themeService = inject(ThemeService);
 
   readonly displayedColumns = ['nombre', 'origen', 'estado', 'detalle'];
   readonly servicios = signal<ServicioSistema[]>([]);
-  readonly currentTheme = this.themeService.currentMode;
   readonly frontendUrl = signal(window.location.origin);
   readonly backendUrl = signal(
     window.location.hostname === 'localhost'
@@ -142,10 +139,6 @@ export class ConfiguracionHome implements OnInit {
     ])
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe((servicios) => this.servicios.set(servicios));
-  }
-
-  setTheme(mode: ThemeMode): void {
-    this.themeService.setMode(mode);
   }
 
   private createSuccess(nombre: string, origen: string, detalle: string): ServicioSistema {
