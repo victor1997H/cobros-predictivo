@@ -69,7 +69,13 @@
           [attr.aria-expanded]="isUserMenuOpen()"
           (click)="toggleUserMenu()"
         >
-          <div class="avatar">{{ getInitials(currentUser) }}</div>
+          <div class="avatar">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()!" alt="" />
+            } @else {
+              {{ getInitials(currentUser) }}
+            }
+          </div>
           <div>
             <strong>{{ currentUser.nombre }}</strong>
             <span>{{ currentUser.email }}</span>
@@ -81,33 +87,100 @@
 
         @if (isUserMenuOpen()) {
           <section class="user-dropdown" aria-label="Configuracion de usuario">
-            <header>
-              <div class="avatar large">{{ getInitials(currentUser) }}</div>
+            <header class="account-header">
+              <div class="avatar large">
+                @if (profilePhoto()) {
+                  <img [src]="profilePhoto()!" alt="" />
+                } @else {
+                  {{ getInitials(currentUser) }}
+                }
+              </div>
               <div>
                 <strong>{{ currentUser.nombre }}</strong>
                 <span>{{ currentUser.email }}</span>
               </div>
             </header>
 
-            <div class="dropdown-section">
-              <span class="section-label">Apariencia</span>
-              <button class="theme-row" type="button" (click)="toggleTheme()">
-                <span>{{ isDarkMode() ? 'Modo oscuro activo' : 'Modo claro activo' }}</span>
-                <strong>{{ isDarkMode() ? 'Cambiar a claro' : 'Cambiar a oscuro' }}</strong>
-              </button>
-            </div>
+            @if (accountMessage()) {
+              <p class="account-message">{{ accountMessage() }}</p>
+            }
 
-            <a
-              class="dropdown-link"
-              routerLink="/configuracion"
-              (click)="closeUserMenu()"
-            >
-              Configuracion del sistema
-            </a>
+            @if (accountError()) {
+              <p class="account-error">{{ accountError() }}</p>
+            }
 
-            <button class="dropdown-danger" type="button" (click)="logout()">
-              Cerrar sesion
-            </button>
+            @if (activeAccountSection() === 'menu') {
+              <div class="account-menu-list">
+                <button type="button" (click)="showAccountSection('profile')">
+                  <span>Mi perfil</span>
+                  <small>Foto y datos de la cuenta</small>
+                </button>
+
+                <button type="button" (click)="showAccountSection('password')">
+                  <span>Cambiar contrase&ntilde;a</span>
+                  <small>Enviar enlace seguro al correo</small>
+                </button>
+
+                <button type="button" (click)="toggleTheme()">
+                  <span>Claro / Oscuro</span>
+                  <small>{{ isDarkMode() ? 'Modo oscuro activo' : 'Modo claro activo' }}</small>
+                </button>
+
+                <button class="danger-item" type="button" (click)="logout()">
+                  <span>Cerrar sesi&oacute;n</span>
+                  <small>Salir del sistema</small>
+                </button>
+              </div>
+            } @else if (activeAccountSection() === 'profile') {
+              <div class="account-panel">
+                <button class="back-button" type="button" (click)="showAccountSection('menu')">
+                  Volver
+                </button>
+
+                <h3>Mi perfil</h3>
+                <p>Actualiza la imagen que se muestra en tu cuenta.</p>
+
+                <label class="photo-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    (change)="onProfilePhotoSelected($event, currentUser)"
+                  />
+                  Seleccionar foto
+                </label>
+
+                @if (profilePhoto()) {
+                  <button
+                    class="secondary-menu-action"
+                    type="button"
+                    (click)="removeProfilePhoto(currentUser)"
+                  >
+                    Quitar foto
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="account-panel">
+                <button class="back-button" type="button" (click)="showAccountSection('menu')">
+                  Volver
+                </button>
+
+                <h3>Cambiar contrase&ntilde;a</h3>
+                <p>
+                  Enviaremos un enlace seguro a {{ currentUser.email }} para crear
+                  una nueva contrase&ntilde;a.
+                </p>
+
+                <button
+                  class="primary-menu-action"
+                  type="button"
+                  [disabled]="isSendingPasswordLink()"
+                  (click)="requestPasswordChange(currentUser)"
+                >
+                  {{ isSendingPasswordLink() ? 'Enviando enlace...' : 'Enviar enlace' }}
+                </button>
+              </div>
+            }
           </section>
         }
       </div>
