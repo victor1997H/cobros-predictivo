@@ -1,0 +1,212 @@
+<section class="prestamos-page">
+  <div class="page-header">
+    <div>
+      <h2>Prestamos</h2>
+      <p>Registra prestamos por cliente y genera sus cuotas.</p>
+    </div>
+
+    <button mat-flat-button color="primary" type="button" (click)="newPrestamo()">
+      Nuevo prestamo
+    </button>
+  </div>
+
+  @if (feedbackMessage()) {
+    <p class="alert success">{{ feedbackMessage() }}</p>
+  }
+
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
+  }
+
+  <section class="summary-grid" aria-label="Resumen de prestamos">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Prestamos</span>
+        <strong>{{ prestamos().length }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Activos</span>
+        <strong>{{ prestamosActivos() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Total prestado</span>
+        <strong>{{ formatCurrency(totalPrestado()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Cuotas programadas</span>
+        <strong>{{ cuotasProgramadas() }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>
+          {{ selectedPrestamo() ? 'Editar prestamo' : 'Nuevo prestamo' }}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form class="prestamo-form" [formGroup]="form" (ngSubmit)="submit()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Cliente</mat-label>
+              <mat-select formControlName="clienteId">
+                @for (cliente of clientes(); track cliente.id) {
+                  <mat-option [value]="cliente.id">
+                    {{ clienteLabel(cliente) }}
+                  </mat-option>
+                }
+              </mat-select>
+              @if (form.controls.clienteId.hasError('required')) {
+                <mat-error>Selecciona un cliente</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Monto prestado</mat-label>
+              <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+              @if (form.controls.monto.hasError('required')) {
+                <mat-error>Ingresa el monto</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha de inicio</mat-label>
+              <input matInput type="date" formControlName="fechaInicio" />
+              @if (form.controls.fechaInicio.hasError('required')) {
+                <mat-error>Ingresa la fecha de inicio</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Numero de cuotas</mat-label>
+              <input matInput type="number" min="1" step="1" formControlName="numeroCuotas" />
+              @if (form.controls.numeroCuotas.hasError('required')) {
+                <mat-error>Ingresa el numero de cuotas</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Estado</mat-label>
+              <mat-select formControlName="estado">
+                @for (estado of estados; track estado) {
+                  <mat-option [value]="estado">{{ estado }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Primer vencimiento</mat-label>
+              <input matInput type="date" formControlName="fechaPrimerVencimiento" />
+            </mat-form-field>
+          </div>
+
+          <mat-checkbox formControlName="generarCuotas" [disabled]="!!selectedPrestamo()">
+            Generar cuotas automaticamente al crear el prestamo
+          </mat-checkbox>
+
+          @if (selectedPrestamo()) {
+            <p class="form-note">
+              La generacion automatica solo se aplica al crear un prestamo nuevo.
+            </p>
+          }
+
+          <div class="form-actions">
+            <button mat-button type="button" [disabled]="isSaving()" (click)="cancelForm()">
+              Cancelar
+            </button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+              {{ isSaving() ? 'Guardando...' : selectedPrestamo() ? 'Actualizar prestamo' : 'Crear prestamo' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-toolbar">
+        <div>
+          <h3>Cartera de prestamos</h3>
+          <p>Prestamos conectados con clientes y cuotas del sistema.</p>
+        </div>
+
+        <button mat-button type="button" [disabled]="isLoading()" (click)="loadData()">
+          Actualizar
+        </button>
+      </div>
+
+      @if (isLoading()) {
+        <p class="loading">Cargando prestamos...</p>
+      } @else if (prestamos().length === 0) {
+        <p class="empty">No existen prestamos registrados.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="prestamos()">
+            <ng-container matColumnDef="cliente">
+              <th mat-header-cell *matHeaderCellDef>Cliente</th>
+              <td mat-cell *matCellDef="let prestamo">
+                <strong>{{ nombreCliente(prestamo) }}</strong>
+                <small>{{ prestamo.cliente.identificacion }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="monto">
+              <th mat-header-cell *matHeaderCellDef>Monto</th>
+              <td mat-cell *matCellDef="let prestamo">
+                {{ formatCurrency(prestamo.monto) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="fechaInicio">
+              <th mat-header-cell *matHeaderCellDef>Inicio</th>
+              <td mat-cell *matCellDef="let prestamo">{{ prestamo.fechaInicio }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="numeroCuotas">
+              <th mat-header-cell *matHeaderCellDef>Cuotas</th>
+              <td mat-cell *matCellDef="let prestamo">{{ prestamo.numeroCuotas }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="estado">
+              <th mat-header-cell *matHeaderCellDef>Estado</th>
+              <td mat-cell *matCellDef="let prestamo">
+                <span class="status-badge" [class.inactive]="prestamo.estado !== 'ACTIVO'">
+                  {{ prestamo.estado }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let prestamo">
+                <div class="actions">
+                  <button mat-button type="button" (click)="editPrestamo(prestamo)">
+                    Editar
+                  </button>
+                  <button mat-button color="warn" type="button" (click)="deletePrestamo(prestamo)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

@@ -22,6 +22,14 @@ const PAGE_HEADERS: Record<string, PageHeader> = {
     title: 'Clientes',
     subtitle: 'Administra la cartera de clientes registrados',
   },
+  '/prestamos': {
+    title: 'Prestamos',
+    subtitle: 'Registro de prestamos asociados a clientes',
+  },
+  '/cuotas': {
+    title: 'Cuotas',
+    subtitle: 'Calendario de vencimientos y saldos pendientes',
+  },
   '/cobros': {
     title: 'Cobros',
     subtitle: 'Gesti\u00f3n de cuotas vencidas y avisos preventivos',

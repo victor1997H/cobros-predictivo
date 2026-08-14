@@ -24,3 +24,23 @@ services:
 
     labels:
       - "traefik.enable=false"
+
+  frontend:
+    image: cobros-predictivo-frontend:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    pull_policy: build
+    container_name: cobros_frontend
+
+    ports:
+      - "4201:80"
+
+    depends_on:
+      - backend
+
+    networks:
+      - cobros_network
+
+    labels:
+      - "traefik.enable=false"

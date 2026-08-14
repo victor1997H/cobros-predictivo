@@ -7,7 +7,10 @@ import { CreatePrestamoDto } from '../dto/create-prestamo.dto';
 import { UpdatePrestamoDto } from '../dto/update-prestamo.dto';
 import { Prestamo } from '../entities/prestamo.entity';
 
-type CreatePrestamoData = Omit<CreatePrestamoDto, 'clienteId'>;
+type CreatePrestamoData = Omit<
+  CreatePrestamoDto,
+  'clienteId' | 'generarCuotas' | 'fechaPrimerVencimiento'
+>;
 type UpdatePrestamoData = Omit<UpdatePrestamoDto, 'clienteId'>;
 
 @Injectable()

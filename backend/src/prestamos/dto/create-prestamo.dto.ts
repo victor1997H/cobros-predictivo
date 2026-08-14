@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsInt,
   IsNotEmpty,
@@ -30,4 +31,12 @@ export class CreatePrestamoDto {
   @IsOptional()
   @MaxLength(30)
   estado?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  generarCuotas?: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  fechaPrimerVencimiento?: string;
 }

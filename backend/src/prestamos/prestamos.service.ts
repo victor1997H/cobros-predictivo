@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { ClienteRepository } from '../clientes/repositories/cliente.repository';
+import { Cuota } from '../cuotas/entities/cuota.entity';
+import { CuotaRepository } from '../cuotas/repositories/cuota.repository';
 import { CreatePrestamoDto } from './dto/create-prestamo.dto';
 import { UpdatePrestamoDto } from './dto/update-prestamo.dto';
 import { Prestamo } from './entities/prestamo.entity';
@@ -11,6 +13,7 @@ export interface PrestamoResponse {
   success: boolean;
   message: string;
   prestamo: Prestamo;
+  cuotasGeneradas?: Cuota[];
 }
 
 export interface PrestamosResponse {
@@ -24,6 +27,7 @@ export class PrestamosService {
   constructor(
     private readonly prestamoRepository: PrestamoRepository,
     private readonly clienteRepository: ClienteRepository,
+    private readonly cuotaRepository: CuotaRepository,
   ) {}
 
   async findAll(): Promise<PrestamosResponse> {
@@ -47,15 +51,27 @@ export class PrestamosService {
   }
 
   async create(data: CreatePrestamoDto): Promise<PrestamoResponse> {
-    const { clienteId, ...prestamoData } = data;
+    const {
+      clienteId,
+      generarCuotas,
+      fechaPrimerVencimiento,
+      ...prestamoData
+    } = data;
     const cliente = await this.findClienteById(clienteId);
     const prestamo = this.prestamoRepository.create(prestamoData, cliente);
     const savedPrestamo = await this.prestamoRepository.save(prestamo);
+    const cuotasGeneradas = generarCuotas
+      ? await this.generarCuotas(savedPrestamo, fechaPrimerVencimiento)
+      : [];
 
     return {
       success: true,
-      message: 'Prestamo creado correctamente',
+      message:
+        cuotasGeneradas.length > 0
+          ? 'Prestamo creado correctamente con cuotas generadas'
+          : 'Prestamo creado correctamente',
       prestamo: savedPrestamo,
+      cuotasGeneradas,
     };
   }
 
@@ -110,5 +126,51 @@ export class PrestamosService {
     }
 
     return cliente;
+  }
+
+  private async generarCuotas(
+    prestamo: Prestamo,
+    fechaPrimerVencimiento?: string,
+  ): Promise<Cuota[]> {
+    const numeroCuotas = prestamo.numeroCuotas;
+    const montoPrestamo = Number(prestamo.monto);
+    const montoBase = Number((montoPrestamo / numeroCuotas).toFixed(2));
+    const primeraFecha =
+      fechaPrimerVencimiento ?? this.addMonths(prestamo.fechaInicio, 1);
+    const cuotas: Cuota[] = [];
+    let totalAsignado = 0;
+
+    for (let index = 0; index < numeroCuotas; index += 1) {
+      const isLast = index === numeroCuotas - 1;
+      const monto = isLast
+        ? Number((montoPrestamo - totalAsignado).toFixed(2))
+        : montoBase;
+
+      totalAsignado = Number((totalAsignado + monto).toFixed(2));
+
+      const cuota = this.cuotaRepository.create(
+        {
+          numeroCuota: index + 1,
+          fechaVencimiento: this.addMonths(primeraFecha, index),
+          monto,
+          saldoPendiente: monto,
+          estado: 'PENDIENTE',
+        },
+        prestamo,
+      );
+
+      cuotas.push(await this.cuotaRepository.save(cuota));
+    }
+
+    return cuotas;
+  }
+
+  private addMonths(date: string, months: number): string {
+    const [year, month, day] = date.split('-').map(Number);
+    const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+    parsedDate.setUTCMonth(parsedDate.getUTCMonth() + months);
+
+    return parsedDate.toISOString().slice(0, 10);
   }
 }

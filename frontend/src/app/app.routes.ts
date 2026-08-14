@@ -6,7 +6,9 @@ import { ResetPassword } from './features/auth/pages/reset-password/reset-passwo
 import { DashboardHome } from './features/dashboard/pages/dashboard-home/dashboard-home';
 import { ClientesList } from './features/clientes/pages/clientes-list/clientes-list';
 import { CobrosList } from './features/cobros/pages/cobros-list/cobros-list';
+import { CuotasList } from './features/cuotas/pages/cuotas-list/cuotas-list';
 import { PagosList } from './features/pagos/pages/pagos-list/pagos-list';
+import { PrestamosList } from './features/prestamos/pages/prestamos-list/prestamos-list';
 import { ReportesHome } from './features/reportes/pages/reportes-home/reportes-home';
 import { ConfiguracionHome } from './features/configuracion/pages/configuracion-home/configuracion-home';
 import { AuthLayout } from './layouts/auth-layout/auth-layout';
@@ -49,6 +51,14 @@ export const routes: Routes = [
       {
         path: 'clientes',
         component: ClientesList,
+      },
+      {
+        path: 'prestamos',
+        component: PrestamosList,
+      },
+      {
+        path: 'cuotas',
+        component: CuotasList,
       },
       {
         path: 'cobros',

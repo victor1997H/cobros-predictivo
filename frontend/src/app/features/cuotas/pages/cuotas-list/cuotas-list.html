@@ -1,0 +1,236 @@
+<section class="cuotas-page">
+  <div class="page-header">
+    <div>
+      <h2>Cuotas</h2>
+      <p>Administra vencimientos, saldos y estados conectados a prestamos.</p>
+    </div>
+
+    <button mat-flat-button color="primary" type="button" (click)="newCuota()">
+      Nueva cuota
+    </button>
+  </div>
+
+  @if (feedbackMessage()) {
+    <p class="alert success">{{ feedbackMessage() }}</p>
+  }
+
+  @if (errorMessage()) {
+    <p class="alert error">{{ errorMessage() }}</p>
+  }
+
+  <section class="summary-grid" aria-label="Resumen de cuotas">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Cuotas</span>
+        <strong>{{ cuotas().length }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Gestionables</span>
+        <strong>{{ cuotasGestionables() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <span>Saldo pendiente</span>
+        <strong>{{ formatCurrency(saldoPendienteTotal()) }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>
+          {{ selectedCuota() ? 'Editar cuota' : 'Nueva cuota' }}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form class="cuota-form" [formGroup]="form" (ngSubmit)="submit()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Prestamo</mat-label>
+              <mat-select formControlName="prestamoId">
+                @for (prestamo of prestamos(); track prestamo.id) {
+                  <mat-option [value]="prestamo.id">
+                    {{ prestamoLabel(prestamo) }}
+                  </mat-option>
+                }
+              </mat-select>
+              @if (form.controls.prestamoId.hasError('required')) {
+                <mat-error>Selecciona un prestamo</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Numero de cuota</mat-label>
+              <input matInput type="number" min="1" step="1" formControlName="numeroCuota" />
+              @if (form.controls.numeroCuota.hasError('required')) {
+                <mat-error>Ingresa el numero de cuota</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha de vencimiento</mat-label>
+              <input matInput type="date" formControlName="fechaVencimiento" />
+              @if (form.controls.fechaVencimiento.hasError('required')) {
+                <mat-error>Ingresa la fecha de vencimiento</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Monto</mat-label>
+              <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+              @if (form.controls.monto.hasError('required')) {
+                <mat-error>Ingresa el monto</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Saldo pendiente</mat-label>
+              <input matInput type="number" min="0" step="0.01" formControlName="saldoPendiente" />
+              @if (form.controls.saldoPendiente.hasError('required')) {
+                <mat-error>Ingresa el saldo</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Estado</mat-label>
+              <mat-select formControlName="estado">
+                @for (estado of estados; track estado) {
+                  <mat-option [value]="estado">{{ estado }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button mat-button type="button" [disabled]="isSaving()" (click)="cancelForm()">
+              Cancelar
+            </button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+              {{ isSaving() ? 'Guardando...' : selectedCuota() ? 'Actualizar cuota' : 'Crear cuota' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-toolbar">
+        <div>
+          <h3>Calendario de cuotas</h3>
+          <p>Las cuotas vencidas o que vencen manana alimentan el modulo Cobros.</p>
+        </div>
+
+        <div class="filters" aria-label="Filtros por estado">
+          @for (filtro of filtros; track filtro.value) {
+            <button
+              type="button"
+              class="filter-button"
+              [class.active]="filtroSeleccionado() === filtro.value"
+              (click)="setFiltro(filtro.value)"
+            >
+              {{ filtro.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <p class="loading">Cargando cuotas...</p>
+      } @else if (cuotas().length === 0) {
+        <p class="empty">No existen cuotas registradas.</p>
+      } @else if (cuotasFiltradas().length === 0) {
+        <p class="empty">No hay cuotas para el filtro seleccionado.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="cuotasFiltradas()">
+            <ng-container matColumnDef="cliente">
+              <th mat-header-cell *matHeaderCellDef>Cliente</th>
+              <td mat-cell *matCellDef="let cuota">
+                <strong>{{ nombreCliente(cuota) }}</strong>
+                <small>{{ cuota.prestamo.cliente.email }}</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="prestamo">
+              <th mat-header-cell *matHeaderCellDef>Prestamo</th>
+              <td mat-cell *matCellDef="let cuota">#{{ cuota.prestamoId }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="numeroCuota">
+              <th mat-header-cell *matHeaderCellDef>Cuota</th>
+              <td mat-cell *matCellDef="let cuota">#{{ cuota.numeroCuota }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="fechaVencimiento">
+              <th mat-header-cell *matHeaderCellDef>Vencimiento</th>
+              <td mat-cell *matCellDef="let cuota">{{ cuota.fechaVencimiento }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="monto">
+              <th mat-header-cell *matHeaderCellDef>Monto</th>
+              <td mat-cell *matCellDef="let cuota">{{ formatCurrency(cuota.monto) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="saldoPendiente">
+              <th mat-header-cell *matHeaderCellDef>Saldo</th>
+              <td mat-cell *matCellDef="let cuota">
+                {{ formatCurrency(cuota.saldoPendiente) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="estado">
+              <th mat-header-cell *matHeaderCellDef>Estado</th>
+              <td mat-cell *matCellDef="let cuota">
+                <span class="status-badge" [class.paid]="cuota.estado === 'PAGADA'">
+                  {{ cuota.estado }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="riesgo">
+              <th mat-header-cell *matHeaderCellDef>Riesgo</th>
+              <td mat-cell *matCellDef="let cuota">
+                <span
+                  class="risk-badge"
+                  [class.risk-bajo]="nivelRiesgo(cuota) === 'BAJO'"
+                  [class.risk-medio]="nivelRiesgo(cuota) === 'MEDIO'"
+                  [class.risk-alto]="nivelRiesgo(cuota) === 'ALTO'"
+                  [class.risk-critico]="nivelRiesgo(cuota) === 'CRITICO'"
+                  [class.risk-pagada]="nivelRiesgo(cuota) === 'PAGADA'"
+                >
+                  {{ nivelRiesgo(cuota) }}
+                </span>
+                <small>{{ diasAtraso(cuota) }} dias</small>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let cuota">
+                <div class="actions">
+                  <button mat-button type="button" (click)="editCuota(cuota)">
+                    Editar
+                  </button>
+                  <button mat-button color="warn" type="button" (click)="deleteCuota(cuota)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

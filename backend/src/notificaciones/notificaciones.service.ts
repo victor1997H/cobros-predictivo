@@ -310,6 +310,7 @@ export class NotificacionesService {
         { type: 'text', text: String(payload.cuotaNumero) },
         { type: 'text', text: String(payload.saldoPendiente) },
         { type: 'text', text: String(payload.diasAtraso) },
+        { type: 'text', text: payload.mensaje },
       ];
 
       template.components = [
@@ -403,16 +404,25 @@ export class NotificacionesService {
   }
 
   private getProviderMessage(data: unknown): string {
-    if (
-      typeof data === 'object' &&
-      data !== null &&
-      'error' in data &&
-      typeof data.error === 'object' &&
-      data.error !== null &&
-      'message' in data.error &&
-      typeof data.error.message === 'string'
-    ) {
-      return data.error.message;
+    if (typeof data === 'object' && data !== null && 'error' in data) {
+      const error = data.error;
+
+      if (typeof error === 'object' && error !== null) {
+        const message =
+          'message' in error && typeof error.message === 'string'
+            ? error.message
+            : 'El proveedor rechazo la notificacion.';
+        const code =
+          'code' in error && typeof error.code === 'number'
+            ? ` code ${error.code}`
+            : '';
+        const subcode =
+          'error_subcode' in error && typeof error.error_subcode === 'number'
+            ? ` subcode ${error.error_subcode}`
+            : '';
+
+        return `${message}${code}${subcode}`;
+      }
     }
 
     return 'El proveedor rechazo la notificacion.';
