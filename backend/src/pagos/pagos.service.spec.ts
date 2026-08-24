@@ -160,6 +160,22 @@ describe('PagosService', () => {
     expect(response.pago.cuota.estado).toBe('PENDIENTE');
   });
 
+  it('permite registrar un pago anticipado sobre una cuota futura pendiente', async () => {
+    cuotaActual = crearCuota(500, 'PENDIENTE');
+    cuotaActual.fechaVencimiento = '2026-12-31';
+
+    const response = await service.create({
+      cuotaId: 1,
+      monto: 100,
+      fechaPago: '2026-08-12',
+      metodoPago: 'EFECTIVO',
+    });
+
+    expect(response.pago.cuota.fechaVencimiento).toBe('2026-12-31');
+    expect(response.pago.cuota.saldoPendiente).toBe(400);
+    expect(response.pago.cuota.estado).toBe('PENDIENTE');
+  });
+
   it('registra pago total y marca la cuota como PAGADA', async () => {
     cuotaActual = crearCuota(300);
 

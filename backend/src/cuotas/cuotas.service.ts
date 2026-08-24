@@ -64,6 +64,32 @@ export interface GestionCobranzaResponse {
   cuotas: CuotaGestionCobranza[];
 }
 
+export interface CuotaPendientePago {
+  cuotaId: number;
+  prestamoId: number;
+  cliente: {
+    id: number;
+    identificacion: string;
+    nombres: string;
+    apellidos: string;
+    email: string;
+    telefono: string;
+  };
+  numeroCuota: number;
+  fechaVencimiento: string;
+  montoCuota: number;
+  saldoPendiente: number;
+  estado: string;
+  totalPagadoCuota: number;
+  saldoPendientePrestamo: number;
+}
+
+export interface CuotasPendientesPagoResponse {
+  success: boolean;
+  message: string;
+  cuotas: CuotaPendientePago[];
+}
+
 @Injectable()
 export class CuotasService {
   constructor(
@@ -106,6 +132,21 @@ export class CuotasService {
       fechaManana: tomorrow,
       cuotas: cuotas.map((cuota) =>
         this.toGestionCobranzaItem(cuota, today, tomorrow),
+      ),
+    };
+  }
+
+  async findPendientesParaPago(): Promise<CuotasPendientesPagoResponse> {
+    const cuotas = (await this.cuotaRepository.findPendientesParaPago()).filter(
+      (cuota) => this.esCuotaDisponibleParaPago(cuota),
+    );
+    const saldoPorPrestamo = this.calcularSaldoPendientePorPrestamo(cuotas);
+
+    return {
+      success: true,
+      message: 'Cuotas pendientes para pago obtenidas correctamente',
+      cuotas: cuotas.map((cuota) =>
+        this.toPendientePagoItem(cuota, saldoPorPrestamo),
       ),
     };
   }
@@ -223,6 +264,57 @@ export class CuotasService {
       diasAtraso,
       nivelRiesgo: clasificarRiesgo(diasAtraso),
     };
+  }
+
+  private esCuotaDisponibleParaPago(cuota: Cuota): boolean {
+    return (
+      ['PENDIENTE', 'VENCIDA'].includes(cuota.estado) &&
+      Number(cuota.saldoPendiente) > 0
+    );
+  }
+
+  private toPendientePagoItem(
+    cuota: Cuota,
+    saldoPorPrestamo: Map<number, number>,
+  ): CuotaPendientePago {
+    const montoCuota = Number(cuota.monto);
+    const saldoPendiente = Number(cuota.saldoPendiente);
+    const cliente = cuota.prestamo.cliente;
+
+    return {
+      cuotaId: cuota.id,
+      prestamoId: cuota.prestamoId,
+      cliente: {
+        id: cliente.id,
+        identificacion: cliente.identificacion,
+        nombres: cliente.nombres,
+        apellidos: cliente.apellidos,
+        email: cliente.email,
+        telefono: cliente.telefono,
+      },
+      numeroCuota: cuota.numeroCuota,
+      fechaVencimiento: cuota.fechaVencimiento,
+      montoCuota,
+      saldoPendiente,
+      estado: cuota.estado,
+      totalPagadoCuota: Number((montoCuota - saldoPendiente).toFixed(2)),
+      saldoPendientePrestamo: saldoPorPrestamo.get(cuota.prestamoId) ?? 0,
+    };
+  }
+
+  private calcularSaldoPendientePorPrestamo(
+    cuotas: Cuota[],
+  ): Map<number, number> {
+    return cuotas.reduce((totales, cuota) => {
+      const saldoActual = totales.get(cuota.prestamoId) ?? 0;
+      const saldoNuevo = Number(
+        (saldoActual + Number(cuota.saldoPendiente)).toFixed(2),
+      );
+
+      totales.set(cuota.prestamoId, saldoNuevo);
+
+      return totales;
+    }, new Map<number, number>());
   }
 
   private calculateDiasAtraso(fechaVencimiento: string, today: string): number {

@@ -111,7 +111,13 @@
             </mat-form-field>
           </div>
 
-          <mat-checkbox formControlName="generarCuotas" [disabled]="!!selectedPrestamo()">
+          @if (financialEditionLocked()) {
+            <p class="form-lock-message">
+              {{ financialEditionLockMessage() }}
+            </p>
+          }
+
+          <mat-checkbox formControlName="generarCuotas">
             Generar cuotas automaticamente al crear el prestamo
           </mat-checkbox>
 

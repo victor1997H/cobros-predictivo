@@ -87,6 +87,16 @@
   color: var(--cp-text-muted);
 }
 
+.form-lock-message {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--cp-warning);
+  border-radius: 8px;
+  color: var(--cp-warning);
+  background: var(--cp-warning-bg);
+  font-weight: 800;
+}
+
 .form-actions,
 .actions {
   display: flex;

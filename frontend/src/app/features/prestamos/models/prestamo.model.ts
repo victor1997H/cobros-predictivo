@@ -11,6 +11,10 @@ export interface Prestamo {
   estado: string;
   createdAt: string;
   updatedAt: string;
+  tieneCuotasGeneradas: boolean;
+  tienePagosRegistrados: boolean;
+  puedeEditarCondicionesFinancieras: boolean;
+  motivoBloqueoEdicion: string | null;
 }
 
 export interface PrestamoPayload {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Equal, In, LessThan, Repository } from 'typeorm';
+import { Equal, In, LessThan, MoreThan, Repository } from 'typeorm';
 
 import { Prestamo } from '../../prestamos/entities/prestamo.entity';
 import { CreateCuotaDto } from '../dto/create-cuota.dto';
@@ -53,6 +53,24 @@ export class CuotaRepository {
           fechaVencimiento: Equal(tomorrow),
         },
       ],
+      relations: {
+        prestamo: {
+          cliente: true,
+        },
+      },
+      order: {
+        fechaVencimiento: 'ASC',
+        numeroCuota: 'ASC',
+      },
+    });
+  }
+
+  findPendientesParaPago(): Promise<Cuota[]> {
+    return this.repository.find({
+      where: {
+        estado: In(['PENDIENTE', 'VENCIDA']),
+        saldoPendiente: MoreThan(0),
+      },
       relations: {
         prestamo: {
           cliente: true,

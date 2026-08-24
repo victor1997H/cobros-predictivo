@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { Cliente } from '../clientes/entities/cliente.entity';
@@ -13,15 +17,49 @@ import { PrestamoRepository } from './repositories/prestamo.repository';
 export interface PrestamoResponse {
   success: boolean;
   message: string;
-  prestamo: Prestamo;
+  prestamo: PrestamoDetalle;
   cuotasGeneradas?: Cuota[];
 }
 
 export interface PrestamosResponse {
   success: boolean;
   message: string;
-  prestamos: Prestamo[];
+  prestamos: PrestamoDetalle[];
 }
+
+export type PrestamoDetalle = Omit<Prestamo, 'cuotas'> & {
+  tieneCuotasGeneradas: boolean;
+  tienePagosRegistrados: boolean;
+  puedeEditarCondicionesFinancieras: boolean;
+  motivoBloqueoEdicion: string | null;
+};
+
+type CampoFinancieroBloqueado =
+  'clienteId' | 'monto' | 'fechaInicio' | 'numeroCuotas';
+
+const CAMPOS_FINANCIEROS_BLOQUEADOS: CampoFinancieroBloqueado[] = [
+  'clienteId',
+  'monto',
+  'fechaInicio',
+  'numeroCuotas',
+];
+
+const MENSAJE_CUOTAS_GENERADAS =
+  'El prestamo ya tiene cuotas generadas. Las condiciones financieras no pueden modificarse.';
+
+const MENSAJE_PAGOS_REGISTRADOS =
+  'El prestamo ya tiene pagos registrados y no se pueden modificar sus condiciones financieras.';
+
+const MENSAJES_POR_CAMPO: Record<CampoFinancieroBloqueado, string> = {
+  clienteId:
+    'El prestamo ya tiene cuotas generadas y no se puede cambiar el cliente asociado.',
+  monto:
+    'El prestamo ya tiene cuotas generadas y no se puede modificar el monto.',
+  fechaInicio:
+    'El prestamo ya tiene cuotas generadas y no se puede modificar la fecha de inicio.',
+  numeroCuotas:
+    'El prestamo ya tiene cuotas generadas y no se puede modificar el numero de cuotas.',
+};
 
 @Injectable()
 export class PrestamosService {
@@ -38,7 +76,7 @@ export class PrestamosService {
     return {
       success: true,
       message: 'Prestamos obtenidos correctamente',
-      prestamos,
+      prestamos: prestamos.map((prestamo) => this.toPrestamoDetalle(prestamo)),
     };
   }
 
@@ -48,7 +86,7 @@ export class PrestamosService {
     return {
       success: true,
       message: 'Prestamo obtenido correctamente',
-      prestamo,
+      prestamo: this.toPrestamoDetalle(prestamo),
     };
   }
 
@@ -90,13 +128,19 @@ export class PrestamosService {
         cuotasGeneradas.length > 0
           ? 'Prestamo creado correctamente con cuotas generadas'
           : 'Prestamo creado correctamente',
-      prestamo: savedPrestamo,
+      prestamo: this.toPrestamoDetalle({
+        ...savedPrestamo,
+        cuotas: cuotasGeneradas,
+      }),
       cuotasGeneradas,
     };
   }
 
   async update(id: number, data: UpdatePrestamoDto): Promise<PrestamoResponse> {
     const prestamo = await this.findPrestamoById(id);
+
+    this.validarEdicionNormal(prestamo, data);
+
     const { clienteId, ...prestamoData } = data;
     const cliente =
       clienteId === undefined
@@ -113,7 +157,7 @@ export class PrestamosService {
     return {
       success: true,
       message: 'Prestamo actualizado correctamente',
-      prestamo: savedPrestamo,
+      prestamo: this.toPrestamoDetalle(savedPrestamo),
     };
   }
 
@@ -136,6 +180,95 @@ export class PrestamosService {
     }
 
     return prestamo;
+  }
+
+  private validarEdicionNormal(
+    prestamo: Prestamo,
+    data: UpdatePrestamoDto,
+  ): void {
+    const estadoEdicion = this.obtenerEstadoEdicion(prestamo);
+
+    if (!estadoEdicion.tieneCuotasGeneradas) {
+      return;
+    }
+
+    const campoModificado = CAMPOS_FINANCIEROS_BLOQUEADOS.find((campo) =>
+      this.campoBloqueadoCambia(prestamo, data, campo),
+    );
+
+    if (!campoModificado) {
+      return;
+    }
+
+    if (estadoEdicion.tienePagosRegistrados) {
+      throw new BadRequestException(MENSAJE_PAGOS_REGISTRADOS);
+    }
+
+    throw new BadRequestException(MENSAJES_POR_CAMPO[campoModificado]);
+  }
+
+  private campoBloqueadoCambia(
+    prestamo: Prestamo,
+    data: UpdatePrestamoDto,
+    campo: CampoFinancieroBloqueado,
+  ): boolean {
+    const nuevoValor = data[campo];
+
+    if (nuevoValor === undefined) {
+      return false;
+    }
+
+    if (campo === 'monto') {
+      return this.toMoney(nuevoValor) !== this.toMoney(prestamo.monto);
+    }
+
+    if (campo === 'clienteId' || campo === 'numeroCuotas') {
+      return Number(nuevoValor) !== Number(prestamo[campo]);
+    }
+
+    return String(nuevoValor) !== String(prestamo[campo]);
+  }
+
+  private toPrestamoDetalle(prestamo: Prestamo): PrestamoDetalle {
+    const estadoEdicion = this.obtenerEstadoEdicion(prestamo);
+
+    return {
+      id: prestamo.id,
+      clienteId: prestamo.clienteId,
+      cliente: prestamo.cliente,
+      monto: prestamo.monto,
+      fechaInicio: prestamo.fechaInicio,
+      numeroCuotas: prestamo.numeroCuotas,
+      estado: prestamo.estado,
+      createdAt: prestamo.createdAt,
+      updatedAt: prestamo.updatedAt,
+      tieneCuotasGeneradas: estadoEdicion.tieneCuotasGeneradas,
+      tienePagosRegistrados: estadoEdicion.tienePagosRegistrados,
+      puedeEditarCondicionesFinancieras:
+        !estadoEdicion.tieneCuotasGeneradas &&
+        !estadoEdicion.tienePagosRegistrados,
+      motivoBloqueoEdicion: estadoEdicion.tienePagosRegistrados
+        ? MENSAJE_PAGOS_REGISTRADOS
+        : estadoEdicion.tieneCuotasGeneradas
+          ? MENSAJE_CUOTAS_GENERADAS
+          : null,
+    };
+  }
+
+  private obtenerEstadoEdicion(prestamo: Prestamo): {
+    tieneCuotasGeneradas: boolean;
+    tienePagosRegistrados: boolean;
+  } {
+    const cuotas = prestamo.cuotas ?? [];
+
+    return {
+      tieneCuotasGeneradas: cuotas.length > 0,
+      tienePagosRegistrados: cuotas.some((cuota) => cuota.pagos?.length > 0),
+    };
+  }
+
+  private toMoney(value: number | string): number {
+    return Number(Number(value).toFixed(2));
   }
 
   private async findClienteById(

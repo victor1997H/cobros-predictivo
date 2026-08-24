@@ -27,6 +27,11 @@ export class CuotasController {
     return this.cuotasService.findGestionCobranza();
   }
 
+  @Get('pendientes-para-pago')
+  findPendientesParaPago() {
+    return this.cuotasService.findPendientesParaPago();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.cuotasService.findOne(id);

@@ -24,6 +24,9 @@ export class PrestamoRepository {
     return this.repository.find({
       relations: {
         cliente: true,
+        cuotas: {
+          pagos: true,
+        },
       },
       order: {
         id: 'DESC',
@@ -36,6 +39,9 @@ export class PrestamoRepository {
       where: { id },
       relations: {
         cliente: true,
+        cuotas: {
+          pagos: true,
+        },
       },
     });
   }

@@ -57,10 +57,10 @@
           <mat-form-field appearance="outline">
             <mat-label>Cuota</mat-label>
             <mat-select formControlName="cuotaId" (selectionChange)="onCuotaChange($event.value)">
-              @for (item of cuotasDisponibles(); track item.cuota.id) {
-                <mat-option [value]="item.cuota.id">
-                  {{ nombreCliente(item) }} - cuota #{{ item.cuota.numeroCuota }} - saldo
-                  {{ formatCurrency(item.cuota.saldoPendiente) }}
+              @for (item of cuotasDisponibles(); track item.cuotaId) {
+                <mat-option [value]="item.cuotaId">
+                  {{ nombreCliente(item) }} - cuota #{{ item.numeroCuota }} - saldo
+                  {{ formatCurrency(item.saldoPendiente) }}
                 </mat-option>
               }
             </mat-select>
@@ -105,16 +105,20 @@
             <div>
               <strong>{{ nombreCliente(item) }}</strong>
               <span>
-                Riesgo {{ item.nivelRiesgo }} &middot; cuota #{{ item.cuota.numeroCuota }}
+                Estado {{ item.estado }} &middot; cuota #{{ item.numeroCuota }}
               </span>
             </div>
             <div class="saldo-preview">
               <span>Saldo actual</span>
-              <strong>{{ formatCurrency(item.cuota.saldoPendiente) }}</strong>
+              <strong>{{ formatCurrency(item.saldoPendiente) }}</strong>
             </div>
             <div class="saldo-preview">
               <span>Saldo despu&eacute;s del pago</span>
               <strong>{{ formatCurrency(saldoDespuesDelPago()) }}</strong>
+            </div>
+            <div class="saldo-preview">
+              <span>Saldo del pr&eacute;stamo</span>
+              <strong>{{ formatCurrency(item.saldoPendientePrestamo) }}</strong>
             </div>
           </div>
         }

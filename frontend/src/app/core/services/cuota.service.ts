@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, timeout } from 'rxjs';
 
 import {
+  CuotasPendientesPagoResponse,
   CuotaPayload,
   CuotaResponse,
   CuotasResponse,
@@ -21,6 +22,14 @@ export class CuotaService {
 
   findAll(): Observable<CuotasResponse> {
     return this.http.get<CuotasResponse>(this.apiUrl).pipe(timeout(15000));
+  }
+
+  findPendientesParaPago(): Observable<CuotasPendientesPagoResponse> {
+    return this.http
+      .get<CuotasPendientesPagoResponse>(
+        `${this.apiUrl}/pendientes-para-pago`,
+      )
+      .pipe(timeout(15000));
   }
 
   create(data: CuotaPayload): Observable<CuotaResponse> {

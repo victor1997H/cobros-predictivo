@@ -15,9 +15,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { finalize, forkJoin } from 'rxjs';
 
-import { CobroService } from '../../../../core/services/cobro.service';
+import { CuotaService } from '../../../../core/services/cuota.service';
 import { PagoService } from '../../../../core/services/pago.service';
-import { CobroGestion } from '../../../cobros/models/cobro.model';
+import { CuotaPendientePago } from '../../../cuotas/models/cuota.model';
 import { PagoDetalle, PagoMetodo, PagoPayload } from '../../models/pago.model';
 
 @Component({
@@ -39,7 +39,7 @@ import { PagoDetalle, PagoMetodo, PagoPayload } from '../../models/pago.model';
 export class PagosList implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly pagoService = inject(PagoService);
-  private readonly cobroService = inject(CobroService);
+  private readonly cuotaService = inject(CuotaService);
 
   readonly displayedColumns = [
     'fechaPago',
@@ -67,7 +67,7 @@ export class PagosList implements OnInit {
   });
 
   readonly pagos = signal<PagoDetalle[]>([]);
-  readonly cuotasDisponibles = signal<CobroGestion[]>([]);
+  readonly cuotasDisponibles = signal<CuotaPendientePago[]>([]);
   readonly selectedCuotaId = signal<number | null>(null);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
@@ -80,7 +80,7 @@ export class PagosList implements OnInit {
   );
   readonly cuotasParaPagar = computed(() => this.cuotasDisponibles().length);
   readonly cuotaSeleccionada = computed(() =>
-    this.cuotasDisponibles().find((item) => item.cuota.id === this.selectedCuotaId()),
+    this.cuotasDisponibles().find((item) => item.cuotaId === this.selectedCuotaId()),
   );
   saldoDespuesDelPago(): number {
     const cuota = this.cuotaSeleccionada();
@@ -90,7 +90,7 @@ export class PagosList implements OnInit {
       return 0;
     }
 
-    return Math.max(cuota.cuota.saldoPendiente - monto, 0);
+    return Math.max(cuota.saldoPendiente - monto, 0);
   }
 
   ngOnInit(): void {
@@ -110,13 +110,13 @@ export class PagosList implements OnInit {
 
     forkJoin({
       pagos: this.pagoService.findAll(),
-      gestion: this.cobroService.findGestionCobranza(),
+      pendientes: this.cuotaService.findPendientesParaPago(),
     })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: ({ pagos, gestion }) => {
+        next: ({ pagos, pendientes }) => {
           this.pagos.set(pagos.pagos);
-          this.cuotasDisponibles.set(gestion.cuotas);
+          this.cuotasDisponibles.set(pendientes.cuotas);
         },
         error: (error: unknown) => {
           this.errorMessage.set(this.resolveErrorMessage(error));
@@ -129,7 +129,7 @@ export class PagosList implements OnInit {
     const cuota = this.cuotaSeleccionada();
 
     if (cuota) {
-      this.form.controls.monto.setValue(cuota.cuota.saldoPendiente);
+      this.form.controls.monto.setValue(cuota.saldoPendiente);
     }
   }
 
@@ -152,7 +152,7 @@ export class PagosList implements OnInit {
     const cuota = this.cuotaSeleccionada();
     const monto = Number(value.monto);
 
-    if (cuota && monto > cuota.cuota.saldoPendiente) {
+    if (cuota && monto > cuota.saldoPendiente) {
       this.errorMessage.set('El monto pagado no puede superar el saldo pendiente de la cuota.');
       return;
     }
@@ -183,7 +183,7 @@ export class PagosList implements OnInit {
       });
   }
 
-  nombreCliente(item: PagoDetalle | CobroGestion): string {
+  nombreCliente(item: PagoDetalle | CuotaPendientePago): string {
     return `${item.cliente.nombres} ${item.cliente.apellidos}`;
   }
 

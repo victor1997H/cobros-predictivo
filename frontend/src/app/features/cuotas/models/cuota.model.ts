@@ -30,6 +30,32 @@ export interface CuotasResponse {
   cuotas: Cuota[];
 }
 
+export interface CuotaPendientePago {
+  cuotaId: number;
+  prestamoId: number;
+  cliente: {
+    id: number;
+    identificacion: string;
+    nombres: string;
+    apellidos: string;
+    email: string;
+    telefono: string;
+  };
+  numeroCuota: number;
+  fechaVencimiento: string;
+  montoCuota: number;
+  saldoPendiente: number;
+  estado: CuotaEstado;
+  totalPagadoCuota: number;
+  saldoPendientePrestamo: number;
+}
+
+export interface CuotasPendientesPagoResponse {
+  success: boolean;
+  message: string;
+  cuotas: CuotaPendientePago[];
+}
+
 export interface CuotaResponse {
   success: boolean;
   message: string;

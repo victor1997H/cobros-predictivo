@@ -42,6 +42,12 @@ export class PrestamosList implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly clienteService = inject(ClienteService);
   private readonly prestamoService = inject(PrestamoService);
+  private readonly financialControlNames = [
+    'clienteId',
+    'monto',
+    'fechaInicio',
+    'numeroCuotas',
+  ] as const;
 
   readonly displayedColumns = [
     'cliente',
@@ -72,6 +78,16 @@ export class PrestamosList implements OnInit {
   readonly isSaving = signal(false);
   readonly feedbackMessage = signal('');
   readonly errorMessage = signal('');
+  readonly financialEditionLocked = computed(() => {
+    const prestamo = this.selectedPrestamo();
+
+    return Boolean(
+      prestamo && prestamo.puedeEditarCondicionesFinancieras === false,
+    );
+  });
+  readonly financialEditionLockMessage = computed(
+    () => this.selectedPrestamo()?.motivoBloqueoEdicion ?? '',
+  );
 
   readonly totalPrestado = computed(() =>
     this.prestamos().reduce(
@@ -135,6 +151,7 @@ export class PrestamosList implements OnInit {
       generarCuotas: true,
       fechaPrimerVencimiento: this.addDays(this.today(), 30),
     });
+    this.syncFormLockState();
   }
 
   editPrestamo(prestamo: Prestamo): void {
@@ -150,12 +167,14 @@ export class PrestamosList implements OnInit {
       generarCuotas: false,
       fechaPrimerVencimiento: this.addDays(prestamo.fechaInicio, 30),
     });
+    this.syncFormLockState();
   }
 
   cancelForm(): void {
     this.showForm.set(false);
     this.selectedPrestamo.set(null);
     this.clearMessages();
+    this.syncFormLockState();
   }
 
   submit(): void {
@@ -291,5 +310,27 @@ export class PrestamosList implements OnInit {
     }
 
     return 'No se pudo completar la operacion.';
+  }
+
+  private syncFormLockState(): void {
+    const shouldLockFinancialFields = this.financialEditionLocked();
+
+    for (const controlName of this.financialControlNames) {
+      const control = this.form.controls[controlName];
+
+      if (shouldLockFinancialFields) {
+        control.disable({ emitEvent: false });
+      } else {
+        control.enable({ emitEvent: false });
+      }
+    }
+
+    if (this.selectedPrestamo()) {
+      this.form.controls.generarCuotas.disable({ emitEvent: false });
+      this.form.controls.fechaPrimerVencimiento.disable({ emitEvent: false });
+    } else {
+      this.form.controls.generarCuotas.enable({ emitEvent: false });
+      this.form.controls.fechaPrimerVencimiento.enable({ emitEvent: false });
+    }
   }
 }
