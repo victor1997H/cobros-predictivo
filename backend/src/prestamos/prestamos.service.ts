@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { ClienteRepository } from '../clientes/repositories/cliente.repository';
@@ -28,6 +29,7 @@ export class PrestamosService {
     private readonly prestamoRepository: PrestamoRepository,
     private readonly clienteRepository: ClienteRepository,
     private readonly cuotaRepository: CuotaRepository,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<PrestamosResponse> {
@@ -57,12 +59,30 @@ export class PrestamosService {
       fechaPrimerVencimiento,
       ...prestamoData
     } = data;
-    const cliente = await this.findClienteById(clienteId);
-    const prestamo = this.prestamoRepository.create(prestamoData, cliente);
-    const savedPrestamo = await this.prestamoRepository.save(prestamo);
-    const cuotasGeneradas = generarCuotas
-      ? await this.generarCuotas(savedPrestamo, fechaPrimerVencimiento)
-      : [];
+    const { savedPrestamo, cuotasGeneradas } =
+      await this.dataSource.transaction(async (manager) => {
+        const cliente = await this.findClienteById(clienteId, manager);
+        const prestamoRepository = manager.getRepository(Prestamo);
+        const prestamo = prestamoRepository.create({
+          ...prestamoData,
+          estado: prestamoData.estado ?? 'ACTIVO',
+          cliente,
+          clienteId: cliente.id,
+        });
+        const savedPrestamo = await prestamoRepository.save(prestamo);
+        const cuotasGeneradas = generarCuotas
+          ? await this.generarCuotas(
+              savedPrestamo,
+              fechaPrimerVencimiento,
+              manager,
+            )
+          : [];
+
+        return {
+          savedPrestamo,
+          cuotasGeneradas,
+        };
+      });
 
     return {
       success: true,
@@ -118,8 +138,13 @@ export class PrestamosService {
     return prestamo;
   }
 
-  private async findClienteById(id: number): Promise<Cliente> {
-    const cliente = await this.clienteRepository.findById(id);
+  private async findClienteById(
+    id: number,
+    manager?: EntityManager,
+  ): Promise<Cliente> {
+    const cliente = manager
+      ? await manager.getRepository(Cliente).findOne({ where: { id } })
+      : await this.clienteRepository.findById(id);
 
     if (!cliente) {
       throw new NotFoundException('Cliente no encontrado');
@@ -131,7 +156,9 @@ export class PrestamosService {
   private async generarCuotas(
     prestamo: Prestamo,
     fechaPrimerVencimiento?: string,
+    manager?: EntityManager,
   ): Promise<Cuota[]> {
+    const cuotaRepository = manager?.getRepository(Cuota);
     const numeroCuotas = prestamo.numeroCuotas;
     const montoPrestamo = Number(prestamo.monto);
     const montoBase = Number((montoPrestamo / numeroCuotas).toFixed(2));
@@ -148,18 +175,24 @@ export class PrestamosService {
 
       totalAsignado = Number((totalAsignado + monto).toFixed(2));
 
-      const cuota = this.cuotaRepository.create(
-        {
-          numeroCuota: index + 1,
-          fechaVencimiento: this.addMonths(primeraFecha, index),
-          monto,
-          saldoPendiente: monto,
-          estado: 'PENDIENTE',
-        },
+      const cuotaData = {
+        numeroCuota: index + 1,
+        fechaVencimiento: this.addMonths(primeraFecha, index),
+        monto,
+        saldoPendiente: monto,
+        estado: 'PENDIENTE' as const,
         prestamo,
-      );
+        prestamoId: prestamo.id,
+      };
+      const cuota = cuotaRepository
+        ? cuotaRepository.create(cuotaData)
+        : this.cuotaRepository.create(cuotaData, prestamo);
 
-      cuotas.push(await this.cuotaRepository.save(cuota));
+      cuotas.push(
+        cuotaRepository
+          ? await cuotaRepository.save(cuota)
+          : await this.cuotaRepository.save(cuota),
+      );
     }
 
     return cuotas;

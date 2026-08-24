@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 
 import { Cuota } from '../cuotas/entities/cuota.entity';
 import { CuotaRepository } from '../cuotas/repositories/cuota.repository';
@@ -16,10 +17,19 @@ import { GestionCobranzaRepository } from './repositories/gestion-cobranza.repos
 
 const TIMEZONE = 'America/Guayaquil';
 
+export type MotivoGestionOmitida =
+  | 'CUOTA_YA_PAGADA'
+  | 'CUOTA_SIN_SALDO'
+  | 'PRESTAMO_SIN_SALDO';
+
 export interface GestionCobranzaResponse {
   success: boolean;
   message: string;
-  gestion: GestionCobranza;
+  procesada: boolean;
+  gestion: GestionCobranza | null;
+  motivo?: MotivoGestionOmitida;
+  saldoPendienteActual?: number;
+  saldoPendientePrestamo?: number;
 }
 
 export interface GestionesCobranzaResponse {
@@ -34,6 +44,7 @@ export class GestionesCobranzaService {
     private readonly gestionRepository: GestionCobranzaRepository,
     private readonly cuotaRepository: CuotaRepository,
     private readonly notificacionesService: NotificacionesService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<GestionesCobranzaResponse> {
@@ -50,6 +61,23 @@ export class GestionesCobranzaService {
     data: CreateGestionCobranzaDto,
   ): Promise<GestionCobranzaResponse> {
     const cuota = await this.findCuotaById(data.cuotaId);
+    const saldoPendienteActual = Number(cuota.saldoPendiente);
+    const saldoPendientePrestamo = await this.calcularSaldoPendientePrestamo(
+      cuota.prestamoId,
+    );
+    const motivoOmitir = this.obtenerMotivoOmitirGestion(
+      cuota,
+      saldoPendientePrestamo,
+    );
+
+    if (motivoOmitir) {
+      return this.crearRespuestaOmitida(
+        motivoOmitir,
+        saldoPendienteActual,
+        saldoPendientePrestamo,
+      );
+    }
+
     const fechaGestion =
       data.fechaGestion ?? this.getDateInTimezone(new Date());
     const canales = this.resolveCanales(data.canales);
@@ -65,21 +93,26 @@ export class GestionesCobranzaService {
       return {
         success: true,
         message: 'La gestion ya fue registrada previamente',
+        procesada: true,
         gestion: gestionExistente,
       };
     }
 
     const cliente = cuota.prestamo.cliente;
     const clienteNombre = `${cliente.nombres} ${cliente.apellidos}`;
+    const mensaje = this.sincronizarSaldoEnMensaje(
+      data.mensaje,
+      saldoPendienteActual,
+    );
     const resultados = await this.notificacionesService.enviarGestion({
       canales,
       clienteNombre,
       clienteEmail: cliente.email,
       clienteTelefono: cliente.telefono,
       asunto: `CobrosPredictivo - ${data.accion}`,
-      mensaje: data.mensaje,
+      mensaje,
       cuotaNumero: cuota.numeroCuota,
-      saldoPendiente: Number(cuota.saldoPendiente),
+      saldoPendiente: saldoPendienteActual,
       diasAtraso: data.diasAtraso,
       accion: data.accion,
     });
@@ -94,7 +127,7 @@ export class GestionesCobranzaService {
       nivelRiesgo: data.nivelRiesgo,
       prioridad: data.prioridad,
       accion: data.accion,
-      mensaje: data.mensaje,
+      mensaje,
       modo: data.modo ?? 'Produccion',
       clienteNombre,
       clienteEmail: cliente.email,
@@ -108,6 +141,7 @@ export class GestionesCobranzaService {
     return {
       success: true,
       message: 'Gestion de cobranza registrada correctamente',
+      procesada: true,
       gestion: savedGestion,
     };
   }
@@ -120,6 +154,86 @@ export class GestionesCobranzaService {
     }
 
     return cuota;
+  }
+
+  private async calcularSaldoPendientePrestamo(
+    prestamoId: number,
+  ): Promise<number> {
+    const cuotas = await this.dataSource.getRepository(Cuota).find({
+      where: { prestamoId },
+      select: {
+        id: true,
+        saldoPendiente: true,
+      },
+    });
+
+    return cuotas.reduce(
+      (total, cuota) =>
+        Number((total + Number(cuota.saldoPendiente)).toFixed(2)),
+      0,
+    );
+  }
+
+  private obtenerMotivoOmitirGestion(
+    cuota: Cuota,
+    saldoPendientePrestamo: number,
+  ): MotivoGestionOmitida | null {
+    if (cuota.estado === 'PAGADA') {
+      return 'CUOTA_YA_PAGADA';
+    }
+
+    if (Number(cuota.saldoPendiente) <= 0) {
+      return 'CUOTA_SIN_SALDO';
+    }
+
+    if (saldoPendientePrestamo <= 0) {
+      return 'PRESTAMO_SIN_SALDO';
+    }
+
+    return null;
+  }
+
+  private crearRespuestaOmitida(
+    motivo: MotivoGestionOmitida,
+    saldoPendienteActual: number,
+    saldoPendientePrestamo: number,
+  ): GestionCobranzaResponse {
+    return {
+      success: true,
+      message: this.getMensajeGestionOmitida(motivo),
+      procesada: false,
+      motivo,
+      saldoPendienteActual,
+      saldoPendientePrestamo,
+      gestion: null,
+    };
+  }
+
+  private getMensajeGestionOmitida(motivo: MotivoGestionOmitida): string {
+    const mensajes: Record<MotivoGestionOmitida, string> = {
+      CUOTA_YA_PAGADA:
+        'Gestion omitida porque la cuota ya se encuentra pagada',
+      CUOTA_SIN_SALDO:
+        'Gestion omitida porque la cuota no tiene saldo pendiente',
+      PRESTAMO_SIN_SALDO:
+        'Gestion omitida porque el prestamo no tiene saldo pendiente',
+    };
+
+    return mensajes[motivo];
+  }
+
+  private sincronizarSaldoEnMensaje(
+    mensaje: string,
+    saldoPendienteActual: number,
+  ): string {
+    return mensaje.replace(
+      /(saldo pendiente(?: de)?\s*:?\s*\$)\d+(?:[.,]\d+)?/gi,
+      `$1${this.formatearMonto(saldoPendienteActual)}`,
+    );
+  }
+
+  private formatearMonto(value: number): string {
+    return String(Number(value.toFixed(2)));
   }
 
   private resolveCanales(canales?: CanalNotificacion[]): CanalNotificacion[] {

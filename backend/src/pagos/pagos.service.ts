@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 
 import { Cuota } from '../cuotas/entities/cuota.entity';
 import { CuotaRepository } from '../cuotas/repositories/cuota.repository';
@@ -64,6 +65,7 @@ export class PagosService {
   constructor(
     private readonly pagoRepository: PagoRepository,
     private readonly cuotaRepository: CuotaRepository,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<PagosResponse> {
@@ -77,40 +79,63 @@ export class PagosService {
   }
 
   async create(data: CreatePagoDto): Promise<PagoResponse> {
-    const cuota = await this.findCuotaById(data.cuotaId);
-    const saldoActual = Number(cuota.saldoPendiente);
-    const monto = Number(data.monto);
+    const savedPagoId = await this.dataSource.transaction(async (manager) => {
+      const cuotaRepository = manager.getRepository(Cuota);
+      const pagoRepository = manager.getRepository(Pago);
+      const cuota = await cuotaRepository.findOne({
+        where: { id: data.cuotaId },
+        relations: {
+          prestamo: {
+            cliente: true,
+          },
+        },
+        lock: {
+          mode: 'pessimistic_write',
+        },
+      });
 
-    if (saldoActual <= 0 || cuota.estado === 'PAGADA') {
-      throw new BadRequestException('La cuota ya se encuentra pagada');
-    }
+      if (!cuota) {
+        throw new NotFoundException('Cuota no encontrada');
+      }
 
-    if (monto > saldoActual) {
-      throw new BadRequestException(
-        'El monto del pago no puede superar el saldo pendiente',
-      );
-    }
+      const saldoActual = Number(cuota.saldoPendiente);
+      const monto = Number(data.monto);
 
-    const fechaPago = data.fechaPago ?? this.getDateInTimezone(new Date());
-    const pago = this.pagoRepository.create(
-      {
+      if (saldoActual <= 0 || cuota.estado === 'PAGADA') {
+        throw new BadRequestException('La cuota ya se encuentra pagada');
+      }
+
+      if (monto > saldoActual) {
+        throw new BadRequestException(
+          'El monto del pago no puede superar el saldo pendiente',
+        );
+      }
+
+      const fechaPago = data.fechaPago ?? this.getDateInTimezone(new Date());
+      const pago = pagoRepository.create({
         ...data,
         monto,
         fechaPago,
-      },
-      cuota,
-    );
-    const savedPago = await this.pagoRepository.save(pago);
+        metodoPago: data.metodoPago ?? 'EFECTIVO',
+        referencia: data.referencia?.trim() || null,
+        observacion: data.observacion?.trim() || null,
+        cuota,
+        cuotaId: cuota.id,
+      });
+      const savedPago = await pagoRepository.save(pago);
 
-    cuota.saldoPendiente = Number((saldoActual - monto).toFixed(2));
+      cuota.saldoPendiente = Number((saldoActual - monto).toFixed(2));
 
-    if (cuota.saldoPendiente === 0) {
-      cuota.estado = 'PAGADA';
-    }
+      if (cuota.saldoPendiente === 0) {
+        cuota.estado = 'PAGADA';
+      }
 
-    await this.cuotaRepository.save(cuota);
+      await cuotaRepository.save(cuota);
 
-    const pagoConRelaciones = await this.pagoRepository.findById(savedPago.id);
+      return savedPago.id;
+    });
+
+    const pagoConRelaciones = await this.pagoRepository.findById(savedPagoId);
 
     if (!pagoConRelaciones) {
       throw new NotFoundException('Pago no encontrado despues de guardarlo');
