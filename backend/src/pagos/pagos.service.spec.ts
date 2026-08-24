@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await */
 import { BadRequestException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
@@ -92,7 +93,7 @@ describe('PagosService', () => {
           ...pago,
           id: pagoId,
           createdAt: new Date(),
-        } as Pago;
+        };
 
         pagoId += 1;
         pagosGuardados.push(savedPago);
@@ -134,7 +135,7 @@ describe('PagosService', () => {
       findById: jest.fn(async (id: number) => {
         const pago = pagosGuardados.find((item) => item.id === id);
 
-        return pago ? ({ ...pago, cuota: cuotaActual } as Pago) : null;
+        return pago ? { ...pago, cuota: cuotaActual } : null;
       }),
     };
 

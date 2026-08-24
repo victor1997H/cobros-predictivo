@@ -18,9 +18,7 @@ import { GestionCobranzaRepository } from './repositories/gestion-cobranza.repos
 const TIMEZONE = 'America/Guayaquil';
 
 export type MotivoGestionOmitida =
-  | 'CUOTA_YA_PAGADA'
-  | 'CUOTA_SIN_SALDO'
-  | 'PRESTAMO_SIN_SALDO';
+  'CUOTA_YA_PAGADA' | 'CUOTA_SIN_SALDO' | 'PRESTAMO_SIN_SALDO';
 
 export interface GestionCobranzaResponse {
   success: boolean;
@@ -211,8 +209,7 @@ export class GestionesCobranzaService {
 
   private getMensajeGestionOmitida(motivo: MotivoGestionOmitida): string {
     const mensajes: Record<MotivoGestionOmitida, string> = {
-      CUOTA_YA_PAGADA:
-        'Gestion omitida porque la cuota ya se encuentra pagada',
+      CUOTA_YA_PAGADA: 'Gestion omitida porque la cuota ya se encuentra pagada',
       CUOTA_SIN_SALDO:
         'Gestion omitida porque la cuota no tiene saldo pendiente',
       PRESTAMO_SIN_SALDO:

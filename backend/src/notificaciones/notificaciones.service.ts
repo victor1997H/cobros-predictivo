@@ -339,7 +339,9 @@ export class NotificacionesService {
     return digits;
   }
 
-  private getTemplateBodyParameterCount(useTemplateParameters: boolean): number {
+  private getTemplateBodyParameterCount(
+    useTemplateParameters: boolean,
+  ): number {
     if (!useTemplateParameters) {
       return 0;
     }

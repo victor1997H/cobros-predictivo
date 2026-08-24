@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await */
 import { NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
@@ -71,7 +72,7 @@ describe('GestionesCobranzaService', () => {
       gestionesCobranza: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as Cuota;
+    };
   }
 
   const dtoBase: CreateGestionCobranzaDto = {
@@ -165,7 +166,9 @@ describe('GestionesCobranzaService', () => {
   });
 
   it('omite gestion y no envia si el prestamo tiene saldo total 0', async () => {
-    cuotaRepository.findById.mockResolvedValueOnce(crearCuota(100, 'PENDIENTE'));
+    cuotaRepository.findById.mockResolvedValueOnce(
+      crearCuota(100, 'PENDIENTE'),
+    );
     cuotasParaSaldoPrestamo = [crearCuota(0, 'PENDIENTE')];
 
     const response = await service.create(dtoBase);
@@ -236,7 +239,9 @@ describe('GestionesCobranzaService', () => {
       createdAt: new Date(),
     } as GestionCobranza;
 
-    gestionRepository.findByClaveGestion.mockResolvedValueOnce(gestionExistente);
+    gestionRepository.findByClaveGestion.mockResolvedValueOnce(
+      gestionExistente,
+    );
 
     const response = await service.create(dtoBase);
 

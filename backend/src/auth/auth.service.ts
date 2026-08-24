@@ -148,12 +148,14 @@ export class AuthService {
 
   private getFrontendUrl(): string {
     return (
-      this.configService.get<string>('FRONTEND_URL') ??
-      'http://localhost:4200'
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:4200'
     ).replace(/\/$/, '');
   }
 
-  private withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
+  private withTimeout<T>(
+    promise: Promise<T>,
+    milliseconds: number,
+  ): Promise<T> {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) => {

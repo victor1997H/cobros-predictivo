@@ -11,7 +11,6 @@ import {
 import { Cuota } from '../../cuotas/entities/cuota.entity';
 import {
   CanalNotificacion,
-  EstadoNotificacion,
   ResultadoNotificacion,
 } from '../../notificaciones/notificaciones.service';
 
