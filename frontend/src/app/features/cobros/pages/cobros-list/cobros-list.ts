@@ -114,6 +114,16 @@ export class CobrosList implements OnInit {
     return item.tipoGestion === 'VENCE_MANANA' ? 'Vence ma\u00f1ana' : 'Vencida';
   }
 
+  categoriaReferenciaLabel(item: CobroGestion): string {
+    if (!item.categoriaReferencia) {
+      return 'Sin categoria';
+    }
+
+    return item.categoriaReferencia === 'PREVENTIVO'
+      ? 'Preventivo'
+      : `Categoria ${item.categoriaReferencia}`;
+  }
+
   accionSugerida(item: CobroGestion): string {
     const acciones: Record<NivelRiesgo, string> = {
       BAJO: 'Aviso preventivo',

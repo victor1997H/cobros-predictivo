@@ -10,7 +10,12 @@ import { CreateCuotaDto } from './dto/create-cuota.dto';
 import { UpdateCuotaDto } from './dto/update-cuota.dto';
 import { Cuota } from './entities/cuota.entity';
 import { CuotaRepository } from './repositories/cuota.repository';
-import { clasificarRiesgo, NivelRiesgo } from './riesgo/nivel-riesgo';
+import {
+  CategoriaReferencia,
+  clasificarCategoriaMorosidad,
+  clasificarRiesgoPorCategoria,
+  NivelRiesgo,
+} from './riesgo/nivel-riesgo';
 
 const TIMEZONE = 'America/Guayaquil';
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -53,6 +58,7 @@ export interface CuotaGestionCobranza {
   };
   tipoGestion: 'VENCE_MANANA' | 'VENCIDA';
   diasAtraso: number;
+  categoriaReferencia: CategoriaReferencia;
   nivelRiesgo: NivelRiesgo;
   saldoPendientePrestamo: number;
 }
@@ -240,6 +246,12 @@ export class CuotasService {
     saldoPorPrestamo: Map<number, number>,
   ): CuotaGestionCobranza {
     const diasAtraso = this.calculateDiasAtraso(cuota.fechaVencimiento, today);
+    const tipoGestion =
+      cuota.fechaVencimiento === tomorrow ? 'VENCE_MANANA' : 'VENCIDA';
+    const categoriaReferencia = this.obtenerCategoriaReferencia(
+      tipoGestion,
+      diasAtraso,
+    );
 
     return {
       cuota: {
@@ -265,12 +277,29 @@ export class CuotasService {
         email: cuota.prestamo.cliente.email,
         telefono: cuota.prestamo.cliente.telefono,
       },
-      tipoGestion:
-        cuota.fechaVencimiento === tomorrow ? 'VENCE_MANANA' : 'VENCIDA',
+      tipoGestion,
       diasAtraso,
-      nivelRiesgo: clasificarRiesgo(diasAtraso),
+      categoriaReferencia,
+      nivelRiesgo: this.obtenerNivelRiesgo(categoriaReferencia),
       saldoPendientePrestamo: saldoPorPrestamo.get(cuota.prestamoId) ?? 0,
     };
+  }
+
+  private obtenerCategoriaReferencia(
+    tipoGestion: CuotaGestionCobranza['tipoGestion'],
+    diasAtraso: number,
+  ): CategoriaReferencia {
+    return tipoGestion === 'VENCE_MANANA'
+      ? 'PREVENTIVO'
+      : clasificarCategoriaMorosidad(diasAtraso);
+  }
+
+  private obtenerNivelRiesgo(
+    categoriaReferencia: CategoriaReferencia,
+  ): NivelRiesgo {
+    return categoriaReferencia === 'PREVENTIVO'
+      ? NivelRiesgo.BAJO
+      : clasificarRiesgoPorCategoria(categoriaReferencia);
   }
 
   private obtenerPrestamoIds(cuotas: Cuota[]): number[] {

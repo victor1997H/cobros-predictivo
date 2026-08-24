@@ -112,6 +112,11 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="categorias">
+              <th mat-header-cell *matHeaderCellDef>Categor&iacute;a</th>
+              <td mat-cell *matCellDef="let item">{{ item.categorias }}</td>
+            </ng-container>
+
             <ng-container matColumnDef="cantidad">
               <th mat-header-cell *matHeaderCellDef>Cuotas</th>
               <td mat-cell *matCellDef="let item">{{ item.cantidad }}</td>
@@ -150,6 +155,14 @@
             <span>Con error</span>
             <strong>{{ gestionesConError() }}</strong>
           </div>
+          <div>
+            <span>Alertas operador</span>
+            <strong>{{ alertasInternas() }}</strong>
+          </div>
+          <div>
+            <span>Intervenci&oacute;n humana</span>
+            <strong>{{ intervencionesHumanas() }}</strong>
+          </div>
         </div>
       </mat-card-content>
     </mat-card>
@@ -163,12 +176,21 @@
         } @else {
           <div class="activity-list">
             @for (gestion of ultimasGestiones(); track gestion.id) {
-              <article>
+              <article
+                [class.alert-high]="gestion.alertaInterna?.tipo === 'ALERTA_ALTO'"
+                [class.alert-critical]="gestion.alertaInterna?.tipo === 'ALERTA_CRITICA'"
+              >
                 <div>
                   <strong>{{ gestion.clienteNombre }}</strong>
                   <span>{{ gestion.accion }}</span>
+                  @if (gestion.alertaInterna) {
+                    <em>{{ alertaOperadorLabel(gestion) }}</em>
+                  }
                 </div>
-                <small>{{ gestion.nivelRiesgo }} &middot; {{ gestion.estadoEnvio }}</small>
+                <small>
+                  {{ gestion.nivelRiesgo }} &middot;
+                  {{ categoriaGestionLabel(gestion) }} &middot; {{ gestion.estadoEnvio }}
+                </small>
               </article>
             }
           </div>

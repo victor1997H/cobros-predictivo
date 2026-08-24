@@ -143,7 +143,7 @@ th {
 
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
 
   div {
@@ -191,8 +191,32 @@ th {
   }
 
   span,
-  small {
+  small,
+  em {
     color: var(--cp-text-muted);
+  }
+
+  em {
+    width: fit-content;
+    display: inline-flex;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: var(--cp-text);
+    background: var(--cp-surface);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 900;
+  }
+
+  &.alert-high {
+    border-left: 4px solid var(--cp-warning);
+    background: var(--cp-warning-bg);
+  }
+
+  &.alert-critical {
+    border-left: 4px solid var(--cp-danger);
+    background: var(--cp-danger-bg);
   }
 }
 

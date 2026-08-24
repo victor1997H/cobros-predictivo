@@ -32,9 +32,7 @@
                 <span>Gestiones registradas por n8n</span>
               </div>
 
-              <button type="button" (click)="refreshNotifications()">
-                Actualizar
-              </button>
+              <button type="button" (click)="refreshNotifications()">Actualizar</button>
             </header>
 
             @if (notificationsLoading()) {
@@ -46,11 +44,29 @@
             } @else {
               <div class="notification-list">
                 @for (notificacion of notificaciones(); track notificacion.id) {
-                  <article>
-                    <span class="risk-dot">{{ notificacion.riesgo }}</span>
+                  <article
+                    [class.alert-high]="notificacion.tipoAlerta === 'ALERTA_ALTO'"
+                    [class.alert-critical]="notificacion.tipoAlerta === 'ALERTA_CRITICA'"
+                  >
+                    <span
+                      class="risk-dot"
+                      [class.risk-alto]="notificacion.riesgo === 'ALTO'"
+                      [class.risk-critico]="notificacion.riesgo === 'CRITICO'"
+                    >
+                      {{ notificacion.riesgo }}
+                    </span>
                     <div>
                       <strong>{{ notificacion.titulo }}</strong>
                       <p>{{ notificacion.detalle }}</p>
+                      @if (notificacion.esAlertaInterna) {
+                        <em class="alert-label">
+                          {{
+                            notificacion.requiereIntervencionHumana
+                              ? 'Atencion inmediata'
+                              : 'Seguimiento prioritario'
+                          }}
+                        </em>
+                      }
                       <small>{{ notificacion.fecha | date: 'dd/MM/yyyy HH:mm' }}</small>
                     </div>
                   </article>
@@ -167,8 +183,8 @@
 
                 <h3>Cambiar contrase&ntilde;a</h3>
                 <p>
-                  Enviaremos un enlace seguro a {{ currentUser.email }} para crear
-                  una nueva contrase&ntilde;a.
+                  Enviaremos un enlace seguro a {{ currentUser.email }} para crear una nueva
+                  contrase&ntilde;a.
                 </p>
 
                 <button
@@ -184,7 +200,6 @@
           </section>
         }
       </div>
-
     </div>
   }
 </header>

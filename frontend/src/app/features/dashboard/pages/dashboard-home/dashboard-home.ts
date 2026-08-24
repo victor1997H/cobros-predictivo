@@ -58,6 +58,14 @@ export class DashboardHome implements OnInit {
   readonly riesgoCritico = computed(
     () => this.cuotasGestion().filter((item) => item.nivelRiesgo === 'CRITICO').length,
   );
+  readonly alertasOperador = computed(
+    () => this.gestiones().filter((gestion) => gestion.alertaInterna).length,
+  );
+  readonly intervencionesHumanas = computed(
+    () =>
+      this.gestiones().filter((gestion) => gestion.alertaInterna?.requiereIntervencionHumana)
+        .length,
+  );
   readonly totalRecaudado = computed(() =>
     this.pagos().reduce((total, item) => total + item.pago.monto, 0),
   );
@@ -100,6 +108,26 @@ export class DashboardHome implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(value);
+  }
+
+  alertaOperadorLabel(gestion: GestionCobranzaRegistro): string {
+    if (!gestion.alertaInterna) {
+      return '';
+    }
+
+    return gestion.alertaInterna.requiereIntervencionHumana
+      ? 'Atencion inmediata'
+      : 'Seguimiento prioritario';
+  }
+
+  categoriaReferenciaLabel(gestion: GestionCobranzaRegistro): string {
+    if (!gestion.categoriaReferencia) {
+      return 'Sin categoria';
+    }
+
+    return gestion.categoriaReferencia === 'PREVENTIVO'
+      ? 'Preventivo'
+      : `Categoria ${gestion.categoriaReferencia}`;
   }
 
   private resolveErrorMessage(error: unknown): string {

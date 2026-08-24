@@ -1,5 +1,16 @@
 export type NivelRiesgo = 'BAJO' | 'MEDIO' | 'ALTO' | 'CRITICO';
 export type TipoGestion = 'VENCE_MANANA' | 'VENCIDA';
+export type CategoriaReferencia =
+  | 'PREVENTIVO'
+  | 'A1'
+  | 'A2'
+  | 'A3'
+  | 'B1'
+  | 'B2'
+  | 'C1'
+  | 'C2'
+  | 'D'
+  | 'E';
 
 export interface CuotaGestion {
   id: number;
@@ -33,6 +44,7 @@ export interface CobroGestion {
   cliente: ClienteGestion;
   tipoGestion: TipoGestion;
   diasAtraso: number;
+  categoriaReferencia?: CategoriaReferencia;
   nivelRiesgo: NivelRiesgo;
 }
 

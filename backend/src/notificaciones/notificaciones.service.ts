@@ -191,17 +191,13 @@ export class NotificacionesService {
   private async enviarWhatsapp(
     payload: NotificacionGestionPayload,
   ): Promise<ResultadoNotificacion> {
-    const token = this.configService.get<string>('WHATSAPP_ACCESS_TOKEN');
-    const phoneNumberId = this.configService.get<string>(
-      'WHATSAPP_PHONE_NUMBER_ID',
-    );
+    const token = this.getConfigValue('WHATSAPP_ACCESS_TOKEN');
+    const phoneNumberId = this.getConfigValue('WHATSAPP_PHONE_NUMBER_ID');
     const apiVersion =
-      this.configService.get<string>('WHATSAPP_GRAPH_API_VERSION') ?? 'v26.0';
-    const templateName = this.configService.get<string>(
-      'WHATSAPP_TEMPLATE_NAME',
-    );
+      this.getConfigValue('WHATSAPP_GRAPH_API_VERSION') ?? 'v26.0';
+    const templateName = this.getConfigValue('WHATSAPP_TEMPLATE_NAME');
     const templateLanguage =
-      this.configService.get<string>('WHATSAPP_TEMPLATE_LANGUAGE') ?? 'es';
+      this.getConfigValue('WHATSAPP_TEMPLATE_LANGUAGE') ?? 'es';
     const useTemplateParameters =
       this.configService.get<string>('WHATSAPP_TEMPLATE_USE_PARAMETERS') ===
       'true';
@@ -428,8 +424,12 @@ export class NotificacionesService {
           'error_subcode' in error && typeof error.error_subcode === 'number'
             ? ` subcode ${error.error_subcode}`
             : '';
+        const hint =
+          'code' in error && error.code === 190
+            ? ' Token invalido o vencido. Genera un nuevo token en Meta y reinicia el backend para cargarlo.'
+            : '';
 
-        return `${message}${code}${subcode}`;
+        return `${message}${code}${subcode}.${hint}`.trim();
       }
     }
 

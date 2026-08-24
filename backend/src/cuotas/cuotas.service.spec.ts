@@ -71,6 +71,10 @@ describe('CuotasService', () => {
     );
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('incluye saldo pendiente del prestamo calculado para n8n cobranza', async () => {
     cuotaRepository.findForGestionCobranza.mockResolvedValue([
       crearCuota({
@@ -91,6 +95,61 @@ describe('CuotasService', () => {
     expect(response.cuotas[0]).toEqual(
       expect.objectContaining({
         saldoPendientePrestamo: 1200,
+      }),
+    );
+  });
+
+  it('marca cuotas que vencen manana como PREVENTIVO y BAJO', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-24T12:00:00.000Z'));
+
+    cuotaRepository.findForGestionCobranza.mockResolvedValue([
+      crearCuota({
+        id: 11,
+        fechaVencimiento: '2026-08-25',
+        saldoPendiente: 250,
+      }),
+    ]);
+    cuotaRepository.calcularSaldoPendientePorPrestamos.mockResolvedValue(
+      new Map([[prestamo.id, 1200]]),
+    );
+
+    const response = await service.findGestionCobranza();
+
+    expect(response.fechaReferencia).toBe('2026-08-24');
+    expect(response.fechaManana).toBe('2026-08-25');
+    expect(response.cuotas[0]).toEqual(
+      expect.objectContaining({
+        tipoGestion: 'VENCE_MANANA',
+        diasAtraso: 0,
+        categoriaReferencia: 'PREVENTIVO',
+        nivelRiesgo: 'BAJO',
+      }),
+    );
+  });
+
+  it('incluye categoria de morosidad para cuotas vencidas', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-24T12:00:00.000Z'));
+
+    cuotaRepository.findForGestionCobranza.mockResolvedValue([
+      crearCuota({
+        id: 12,
+        fechaVencimiento: '2026-07-17',
+        estado: 'VENCIDA',
+        saldoPendiente: 250,
+      }),
+    ]);
+    cuotaRepository.calcularSaldoPendientePorPrestamos.mockResolvedValue(
+      new Map([[prestamo.id, 1200]]),
+    );
+
+    const response = await service.findGestionCobranza();
+
+    expect(response.cuotas[0]).toEqual(
+      expect.objectContaining({
+        tipoGestion: 'VENCIDA',
+        diasAtraso: 38,
+        categoriaReferencia: 'B1',
+        nivelRiesgo: 'ALTO',
       }),
     );
   });

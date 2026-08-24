@@ -28,6 +28,11 @@
       <h1>{{ riesgoCritico() }}</h1>
     </div>
 
+    <div class="card warning">
+      <span>Alertas operador</span>
+      <h1>{{ alertasOperador() }}</h1>
+    </div>
+
     <div class="card">
       <span>Total recaudado</span>
       <h1>{{ formatCurrency(totalRecaudado()) }}</h1>
@@ -41,6 +46,11 @@
     <div class="card">
       <span>Gestiones n8n</span>
       <h1>{{ gestiones().length }}</h1>
+    </div>
+
+    <div class="card danger">
+      <span>Intervenci&oacute;n humana</span>
+      <h1>{{ intervencionesHumanas() }}</h1>
     </div>
   </div>
 
@@ -89,10 +99,19 @@
       } @else {
         <div class="activity-list">
           @for (gestion of ultimasGestiones(); track gestion.id) {
-            <article>
+            <article
+              [class.alert-high]="gestion.alertaInterna?.tipo === 'ALERTA_ALTO'"
+              [class.alert-critical]="gestion.alertaInterna?.tipo === 'ALERTA_CRITICA'"
+            >
               <strong>{{ gestion.clienteNombre }}</strong>
               <span>{{ gestion.accion }}</span>
-              <small>{{ gestion.nivelRiesgo }} &middot; {{ gestion.estadoEnvio }}</small>
+              @if (gestion.alertaInterna) {
+                <em>{{ alertaOperadorLabel(gestion) }}</em>
+              }
+              <small>
+                {{ gestion.nivelRiesgo }} &middot;
+                {{ categoriaReferenciaLabel(gestion) }} &middot; {{ gestion.estadoEnvio }}
+              </small>
             </article>
           }
         </div>

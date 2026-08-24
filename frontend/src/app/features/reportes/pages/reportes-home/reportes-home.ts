@@ -16,12 +16,17 @@ import { CobroService } from '../../../../core/services/cobro.service';
 import { GestionCobranzaService } from '../../../../core/services/gestion-cobranza.service';
 import { PagoService } from '../../../../core/services/pago.service';
 import { Cliente } from '../../../clientes/models/cliente.model';
-import { CobroGestion, NivelRiesgo } from '../../../cobros/models/cobro.model';
+import {
+  CategoriaReferencia,
+  CobroGestion,
+  NivelRiesgo,
+} from '../../../cobros/models/cobro.model';
 import { GestionCobranzaRegistro } from '../../../cobros/models/gestion-cobranza.model';
 import { PagoDetalle } from '../../../pagos/models/pago.model';
 
 interface RiesgoResumen {
   nivel: NivelRiesgo;
+  categorias: string;
   cantidad: number;
   saldoPendiente: number;
 }
@@ -40,7 +45,7 @@ export class ReportesHome implements OnInit {
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
   private readonly pagoService = inject(PagoService);
 
-  readonly displayedColumns = ['nivel', 'cantidad', 'saldoPendiente'];
+  readonly displayedColumns = ['nivel', 'categorias', 'cantidad', 'saldoPendiente'];
   readonly clientes = signal<Cliente[]>([]);
   readonly cuotasGestion = signal<CobroGestion[]>([]);
   readonly gestionesRegistradas = signal<GestionCobranzaRegistro[]>([]);
@@ -77,6 +82,7 @@ export class ReportesHome implements OnInit {
 
       return {
         nivel,
+        categorias: this.categoriasPorNivel(cuotas),
         cantidad: cuotas.length,
         saldoPendiente: cuotas.reduce((total, item) => total + item.cuota.saldoPendiente, 0),
       };
@@ -91,6 +97,15 @@ export class ReportesHome implements OnInit {
   );
   readonly gestionesConError = computed(
     () => this.gestionesRegistradas().filter((gestion) => gestion.estadoEnvio === 'ERROR').length,
+  );
+  readonly alertasInternas = computed(
+    () => this.gestionesRegistradas().filter((gestion) => gestion.alertaInterna).length,
+  );
+  readonly intervencionesHumanas = computed(
+    () =>
+      this.gestionesRegistradas().filter(
+        (gestion) => gestion.alertaInterna?.requiereIntervencionHumana,
+      ).length,
   );
 
   ngOnInit(): void {
@@ -132,6 +147,46 @@ export class ReportesHome implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(value);
+  }
+
+  alertaOperadorLabel(gestion: GestionCobranzaRegistro): string {
+    if (!gestion.alertaInterna) {
+      return '';
+    }
+
+    return gestion.alertaInterna.requiereIntervencionHumana
+      ? 'Atencion inmediata'
+      : 'Seguimiento prioritario';
+  }
+
+  categoriaGestionLabel(gestion: GestionCobranzaRegistro): string {
+    return this.categoriaReferenciaLabel(gestion.categoriaReferencia);
+  }
+
+  private categoriasPorNivel(cuotas: CobroGestion[]): string {
+    if (cuotas.length === 0) {
+      return 'Sin cuotas';
+    }
+
+    return Array.from(
+      new Set(
+        cuotas.map((item) =>
+          this.categoriaReferenciaLabel(item.categoriaReferencia),
+        ),
+      ),
+    ).join(', ');
+  }
+
+  private categoriaReferenciaLabel(
+    categoriaReferencia?: CategoriaReferencia,
+  ): string {
+    if (!categoriaReferencia) {
+      return 'Sin categoria';
+    }
+
+    return categoriaReferencia === 'PREVENTIVO'
+      ? 'Preventivo'
+      : `Categoria ${categoriaReferencia}`;
   }
 
   private resolveErrorMessage(error: unknown): string {

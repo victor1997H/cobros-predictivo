@@ -4,6 +4,10 @@ import { DataSource } from 'typeorm';
 import { Cuota } from '../cuotas/entities/cuota.entity';
 import { CuotaRepository } from '../cuotas/repositories/cuota.repository';
 import {
+  CategoriaReferencia,
+  clasificarCategoriaMorosidad,
+} from '../cuotas/riesgo/nivel-riesgo';
+import {
   CanalNotificacion,
   NotificacionesService,
   ResultadoNotificacion,
@@ -20,11 +24,26 @@ const TIMEZONE = 'America/Guayaquil';
 export type MotivoGestionOmitida =
   'CUOTA_YA_PAGADA' | 'CUOTA_SIN_SALDO' | 'PRESTAMO_SIN_SALDO';
 
+export type TipoAlertaInterna = 'ALERTA_ALTO' | 'ALERTA_CRITICA';
+
+export interface AlertaInternaGestion {
+  tipo: TipoAlertaInterna;
+  prioridad: string;
+  mensaje: string;
+  accionRecomendada: string;
+  requiereIntervencionHumana: boolean;
+}
+
+export type GestionCobranzaConAlerta = GestionCobranza & {
+  categoriaReferencia: CategoriaReferencia;
+  alertaInterna: AlertaInternaGestion | null;
+};
+
 export interface GestionCobranzaResponse {
   success: boolean;
   message: string;
   procesada: boolean;
-  gestion: GestionCobranza | null;
+  gestion: GestionCobranzaConAlerta | null;
   motivo?: MotivoGestionOmitida;
   saldoPendienteActual?: number;
   saldoPendientePrestamo?: number;
@@ -33,7 +52,7 @@ export interface GestionCobranzaResponse {
 export interface GestionesCobranzaResponse {
   success: boolean;
   message: string;
-  gestiones: GestionCobranza[];
+  gestiones: GestionCobranzaConAlerta[];
 }
 
 @Injectable()
@@ -47,11 +66,12 @@ export class GestionesCobranzaService {
 
   async findAll(): Promise<GestionesCobranzaResponse> {
     const gestiones = await this.gestionRepository.findAll();
+    const gestionesConAlerta = await this.agregarAlertasInternas(gestiones);
 
     return {
       success: true,
       message: 'Gestiones de cobranza obtenidas correctamente',
-      gestiones,
+      gestiones: gestionesConAlerta,
     };
   }
 
@@ -84,18 +104,6 @@ export class GestionesCobranzaService {
       data.cuotaId,
       data.accion,
     );
-    const gestionExistente =
-      await this.gestionRepository.findByClaveGestion(claveGestion);
-
-    if (gestionExistente) {
-      return {
-        success: true,
-        message: 'La gestion ya fue registrada previamente',
-        procesada: true,
-        gestion: gestionExistente,
-      };
-    }
-
     const cliente = cuota.prestamo.cliente;
     const clienteNombre = `${cliente.nombres} ${cliente.apellidos}`;
     const mensaje = this.sincronizarSaldosEnMensaje(
@@ -110,8 +118,7 @@ export class GestionesCobranzaService {
           saldoPendientePrestamo,
         )
       : undefined;
-    const resultados = await this.notificacionesService.enviarGestion({
-      canales,
+    const payloadNotificacion = {
       clienteNombre,
       clienteEmail: cliente.email,
       clienteTelefono: cliente.telefono,
@@ -122,6 +129,61 @@ export class GestionesCobranzaService {
       saldoPendiente: saldoPendienteActual,
       diasAtraso: data.diasAtraso,
       accion: data.accion,
+    };
+    const gestionExistente =
+      await this.gestionRepository.findByClaveGestion(claveGestion);
+
+    if (gestionExistente) {
+      const canalesPendientes = this.obtenerCanalesPendientes(
+        canales,
+        gestionExistente.resultadoEnvio,
+      );
+
+      if (canalesPendientes.length > 0) {
+        const resultadosReintento =
+          await this.notificacionesService.enviarGestion({
+            canales: canalesPendientes,
+            ...payloadNotificacion,
+          });
+
+        gestionExistente.canalesSolicitados = this.combinarCanales(
+          gestionExistente.canalesSolicitados,
+          canales,
+        );
+        gestionExistente.resultadoEnvio = this.combinarResultadosEnvio(
+          gestionExistente.resultadoEnvio,
+          resultadosReintento,
+          gestionExistente.canalesSolicitados,
+        );
+        gestionExistente.estadoEnvio = this.calcularEstadoEnvio(
+          gestionExistente.resultadoEnvio,
+        );
+
+        const gestionActualizada =
+          await this.gestionRepository.save(gestionExistente);
+
+        return {
+          success: true,
+          message: 'Gestion existente actualizada con reintentos pendientes',
+          procesada: true,
+          gestion: this.agregarAlertaInternaConSaldo(
+            gestionActualizada,
+            saldoPendientePrestamo,
+          ),
+        };
+      }
+
+      return {
+        success: true,
+        message: 'La gestion ya fue registrada previamente',
+        procesada: true,
+        gestion: await this.agregarAlertaInterna(gestionExistente),
+      };
+    }
+
+    const resultados = await this.notificacionesService.enviarGestion({
+      canales,
+      ...payloadNotificacion,
     });
 
     const gestion = this.gestionRepository.create({
@@ -149,7 +211,10 @@ export class GestionesCobranzaService {
       success: true,
       message: 'Gestion de cobranza registrada correctamente',
       procesada: true,
-      gestion: savedGestion,
+      gestion: this.agregarAlertaInternaConSaldo(
+        savedGestion,
+        saldoPendientePrestamo,
+      ),
     };
   }
 
@@ -178,6 +243,30 @@ export class GestionesCobranzaService {
       (total, cuota) =>
         Number((total + Number(cuota.saldoPendiente)).toFixed(2)),
       0,
+    );
+  }
+
+  private async calcularSaldoPendientePrestamos(
+    prestamoIds: number[],
+  ): Promise<Map<number, number>> {
+    if (prestamoIds.length === 0) {
+      return new Map();
+    }
+
+    const rows = await this.dataSource
+      .getRepository(Cuota)
+      .createQueryBuilder('cuota')
+      .select('cuota.prestamoId', 'prestamoId')
+      .addSelect('COALESCE(SUM(cuota.saldoPendiente), 0)', 'saldoPendiente')
+      .where('cuota.prestamoId IN (:...prestamoIds)', { prestamoIds })
+      .groupBy('cuota.prestamoId')
+      .getRawMany<{ prestamoId: string; saldoPendiente: string }>();
+
+    return new Map(
+      rows.map((row) => [
+        Number(row.prestamoId),
+        Number(Number(row.saldoPendiente).toFixed(2)),
+      ]),
     );
   }
 
@@ -228,6 +317,99 @@ export class GestionesCobranzaService {
     return mensajes[motivo];
   }
 
+  private async agregarAlertasInternas(
+    gestiones: GestionCobranza[],
+  ): Promise<GestionCobranzaConAlerta[]> {
+    const prestamoIds = Array.from(
+      new Set(
+        gestiones
+          .map((gestion) => gestion.cuota?.prestamoId)
+          .filter(
+            (prestamoId): prestamoId is number =>
+              typeof prestamoId === 'number',
+          ),
+      ),
+    );
+    const saldosPorPrestamo =
+      await this.calcularSaldoPendientePrestamos(prestamoIds);
+
+    return gestiones.map((gestion) =>
+      this.agregarAlertaInternaConSaldo(
+        gestion,
+        saldosPorPrestamo.get(gestion.cuota?.prestamoId ?? 0) ?? 0,
+      ),
+    );
+  }
+
+  private async agregarAlertaInterna(
+    gestion: GestionCobranza,
+  ): Promise<GestionCobranzaConAlerta> {
+    const saldoPendientePrestamo = gestion.cuota
+      ? await this.calcularSaldoPendientePrestamo(gestion.cuota.prestamoId)
+      : 0;
+
+    return this.agregarAlertaInternaConSaldo(gestion, saldoPendientePrestamo);
+  }
+
+  private agregarAlertaInternaConSaldo(
+    gestion: GestionCobranza,
+    saldoPendientePrestamo: number,
+  ): GestionCobranzaConAlerta {
+    return Object.assign(gestion, {
+      categoriaReferencia: this.obtenerCategoriaReferencia(gestion),
+      alertaInterna: this.crearAlertaInterna(gestion, saldoPendientePrestamo),
+    });
+  }
+
+  private obtenerCategoriaReferencia(
+    gestion: GestionCobranza,
+  ): CategoriaReferencia {
+    return gestion.tipoGestion === 'VENCE_MANANA'
+      ? 'PREVENTIVO'
+      : clasificarCategoriaMorosidad(gestion.diasAtraso);
+  }
+
+  private crearAlertaInterna(
+    gestion: GestionCobranza,
+    saldoPendientePrestamo: number,
+  ): AlertaInternaGestion | null {
+    const nivelRiesgo = gestion.nivelRiesgo.toUpperCase();
+
+    if (nivelRiesgo !== 'ALTO' && nivelRiesgo !== 'CRITICO') {
+      return null;
+    }
+
+    const esCritico = nivelRiesgo === 'CRITICO';
+
+    return {
+      tipo: esCritico ? 'ALERTA_CRITICA' : 'ALERTA_ALTO',
+      prioridad: esCritico ? 'MAXIMA' : 'ALTA',
+      mensaje: this.crearMensajeAlertaInterna(gestion, saldoPendientePrestamo),
+      accionRecomendada: esCritico
+        ? 'Contacto inmediato y revision manual'
+        : 'Seguimiento prioritario',
+      requiereIntervencionHumana: esCritico,
+    };
+  }
+
+  private crearMensajeAlertaInterna(
+    gestion: GestionCobranza,
+    saldoPendientePrestamo: number,
+  ): string {
+    const cuota = gestion.cuota;
+    const numeroCuota = cuota?.numeroCuota ?? gestion.cuotaId;
+    const saldoCuota = this.formatearMonto(Number(cuota?.saldoPendiente ?? 0));
+    const saldoPrestamo = this.formatearMonto(saldoPendientePrestamo);
+
+    return [
+      `Cliente: ${gestion.clienteNombre}`,
+      `Cuota: ${numeroCuota}`,
+      `Saldo cuota: $${saldoCuota}`,
+      `Saldo prestamo: $${saldoPrestamo}`,
+      `Dias de mora: ${gestion.diasAtraso}`,
+    ].join('\n');
+  }
+
   private sincronizarSaldosEnMensaje(
     mensaje: string,
     saldoPendienteActual: number,
@@ -261,6 +443,66 @@ export class GestionesCobranzaService {
     }
 
     return Array.from(new Set(canales));
+  }
+
+  private obtenerCanalesPendientes(
+    canalesSolicitados: CanalNotificacion[],
+    resultadosPrevios: ResultadoNotificacion[] | null,
+  ): CanalNotificacion[] {
+    const estadoPorCanal = new Map(
+      (resultadosPrevios ?? []).map((resultado) => [
+        resultado.canal,
+        resultado.estado,
+      ]),
+    );
+
+    return canalesSolicitados.filter(
+      (canal) => estadoPorCanal.get(canal) !== 'ENVIADO',
+    );
+  }
+
+  private combinarCanales(
+    canalesActuales: CanalNotificacion[],
+    canalesNuevos: CanalNotificacion[],
+  ): CanalNotificacion[] {
+    return this.ordenarCanales([...canalesActuales, ...canalesNuevos]);
+  }
+
+  private combinarResultadosEnvio(
+    resultadosPrevios: ResultadoNotificacion[] | null,
+    resultadosNuevos: ResultadoNotificacion[],
+    canalesSolicitados: CanalNotificacion[],
+  ): ResultadoNotificacion[] {
+    const resultadoPorCanal = new Map<
+      CanalNotificacion,
+      ResultadoNotificacion
+    >();
+
+    for (const resultado of resultadosPrevios ?? []) {
+      resultadoPorCanal.set(resultado.canal, resultado);
+    }
+
+    for (const resultado of resultadosNuevos) {
+      resultadoPorCanal.set(resultado.canal, resultado);
+    }
+
+    const canales = this.ordenarCanales([
+      ...canalesSolicitados,
+      ...resultadoPorCanal.keys(),
+    ]);
+
+    return canales.flatMap((canal) => {
+      const resultado = resultadoPorCanal.get(canal);
+
+      return resultado ? [resultado] : [];
+    });
+  }
+
+  private ordenarCanales(canales: CanalNotificacion[]): CanalNotificacion[] {
+    const canalesUnicos = new Set(canales);
+    const orden: CanalNotificacion[] = ['CORREO', 'WHATSAPP'];
+
+    return orden.filter((canal) => canalesUnicos.has(canal));
   }
 
   private calcularEstadoEnvio(

@@ -10,6 +10,11 @@ export interface NotificacionSistema {
   detalle: string;
   estado: string;
   riesgo: string;
+  prioridad: string;
+  tipoAlerta: string | null;
+  accionRecomendada: string | null;
+  requiereIntervencionHumana: boolean;
+  esAlertaInterna: boolean;
   fecha: string;
 }
 
@@ -31,22 +36,36 @@ export class NotificacionTiempoRealService implements OnDestroy {
   readonly notificaciones = computed<NotificacionSistema[]>(() =>
     this.gestiones()
       .slice(0, 8)
-      .map((gestion) => ({
-        id: gestion.id,
-        titulo: gestion.accion,
-        detalle: `${gestion.clienteNombre} · ${gestion.estadoEnvio}`,
-        estado: gestion.estadoEnvio,
-        riesgo: gestion.nivelRiesgo,
-        fecha: gestion.createdAt,
-      })),
+      .map((gestion) => {
+        const alerta = gestion.alertaInterna ?? null;
+
+        return {
+          id: gestion.id,
+          titulo: alerta
+            ? alerta.tipo === 'ALERTA_CRITICA'
+              ? 'Alerta urgente'
+              : 'Alerta interna'
+            : gestion.accion,
+          detalle: alerta
+            ? `${gestion.clienteNombre} - ${alerta.accionRecomendada}`
+            : `${gestion.clienteNombre} - ${gestion.estadoEnvio}`,
+          estado: gestion.estadoEnvio,
+          riesgo: gestion.nivelRiesgo,
+          prioridad: alerta?.prioridad ?? gestion.prioridad,
+          tipoAlerta: alerta?.tipo ?? null,
+          accionRecomendada: alerta?.accionRecomendada ?? null,
+          requiereIntervencionHumana: alerta?.requiereIntervencionHumana ?? false,
+          esAlertaInterna: alerta !== null,
+          fecha: gestion.createdAt,
+        };
+      }),
   );
 
   readonly unreadCount = computed(() => {
     const vistoHasta = this.lastSeenAt();
 
-    return this.gestiones().filter(
-      (gestion) => new Date(gestion.createdAt).getTime() > vistoHasta,
-    ).length;
+    return this.gestiones().filter((gestion) => new Date(gestion.createdAt).getTime() > vistoHasta)
+      .length;
   });
 
   start(): void {
@@ -55,9 +74,7 @@ export class NotificacionTiempoRealService implements OnDestroy {
     }
 
     this.refresh();
-    this.pollingSubscription = interval(this.refreshMs).subscribe(() =>
-      this.refresh(),
-    );
+    this.pollingSubscription = interval(this.refreshMs).subscribe(() => this.refresh());
   }
 
   refresh(): void {
@@ -74,8 +91,7 @@ export class NotificacionTiempoRealService implements OnDestroy {
       .subscribe({
         next: (response) => {
           const gestiones = [...response.gestiones].sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
 
           this.gestiones.set(gestiones);
