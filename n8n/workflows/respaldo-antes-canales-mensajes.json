@@ -231,7 +231,7 @@
               {
                 "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-canal",
                 "name": "canal",
-                "value": "Correo",
+                "value": "Correo y WhatsApp",
                 "type": "string"
               },
               {
@@ -243,7 +243,7 @@
               {
                 "id": "9b6e8b58-4f4a-46a2-89f1-0c45a18c2a01-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Estimado/a ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ',\\n\\nLe recordamos que su cuota No. ' + $json.cuota.numeroCuota + ' mantiene un valor pendiente de $' + $json.cuota.saldoPendiente + ' y tiene fecha de vencimiento el ' + $json.cuota.fechaVencimiento + '.\\n\\nSaldo pendiente actual de su prestamo:\\n$' + $json.saldoPendientePrestamo + '\\n\\nLe recomendamos realizar su pago dentro de la fecha establecida para mantener sus obligaciones al dia.\\n\\nSi ya realizo el pago recientemente, puede ignorar este mensaje.' }}",
+                "value": "={{ 'Aviso preventivo para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su cuota ' + $json.cuota.numeroCuota + ' vence el ' + $json.cuota.fechaVencimiento + '. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Realice el pago antes del vencimiento para evitar mora.' }}",
                 "type": "string"
               }
             ]
@@ -287,7 +287,7 @@
               {
                 "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-canal",
                 "name": "canal",
-                "value": "Correo",
+                "value": "Correo y WhatsApp",
                 "type": "string"
               },
               {
@@ -299,7 +299,7 @@
               {
                 "id": "7789a749-ff7f-4a8c-9478-1386c4c1a6d2-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Estimado/a ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ',\\n\\nRegistramos que su cuota No. ' + $json.cuota.numeroCuota + ' mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + '.\\n\\nFecha de vencimiento:\\n' + $json.cuota.fechaVencimiento + '\\n\\nDias de atraso:\\n' + $json.diasAtraso + '\\n\\nSaldo pendiente de su prestamo:\\n$' + $json.saldoPendientePrestamo + '\\n\\nLe solicitamos regularizar su pago o acercarse a la cooperativa para revisar su situacion.\\n\\nSi ya realizo el pago recientemente, puede ignorar este mensaje.' }}",
+                "value": "={{ 'Recordatorio de mora temprana para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': registra la cuota ' + $json.cuota.numeroCuota + ' vencida con ' + $json.diasAtraso + ' dias de atraso. Saldo pendiente: $' + $json.cuota.saldoPendiente + '. Regularice el pago lo antes posible para evitar acumulacion de mora.' }}",
                 "type": "string"
               }
             ]
@@ -355,13 +355,7 @@
               {
                 "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Estimado/a ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ',\\n\\nSu cuota No. ' + $json.cuota.numeroCuota + ' mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + ' y registra ' + $json.diasAtraso + ' dias de atraso.\\n\\nFecha de vencimiento:\\n' + $json.cuota.fechaVencimiento + '\\n\\nSaldo pendiente actual del prestamo:\\n$' + $json.saldoPendientePrestamo + '\\n\\nSolicitamos que regularice su pago o se acerque a la cooperativa lo antes posible para revisar su obligacion.' }}",
-                "type": "string"
-              },
-              {
-                "id": "1f7a8579-8f44-49bb-845e-7f1266c66d72-mensajeWhatsapp",
-                "name": "mensajeWhatsapp",
-                "value": "={{ 'Hola ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + '.\\n\\nSu cuota No. ' + $json.cuota.numeroCuota + ' mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + ' y registra ' + $json.diasAtraso + ' dias de atraso.\\n\\nSaldo pendiente del prestamo:\\n$' + $json.saldoPendientePrestamo + '\\n\\nPor favor realice el pago o acerquese a la cooperativa lo antes posible para regularizar su obligacion.' }}",
+                "value": "={{ 'Seguimiento prioritario para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su atraso requiere atencion. La cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y saldo pendiente de $' + $json.cuota.saldoPendiente + '. Comuniquese con el asesor de cobranza para coordinar una solucion de pago.' }}",
                 "type": "string"
               }
             ]
@@ -399,7 +393,7 @@
               {
                 "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-accion",
                 "name": "accion",
-                "value": "Revision critica y contacto urgente",
+                "value": "Revision critica",
                 "type": "string"
               },
               {
@@ -417,13 +411,7 @@
               {
                 "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-mensaje",
                 "name": "mensaje",
-                "value": "={{ 'Estimado/a ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ',\\n\\nSu cuota No. ' + $json.cuota.numeroCuota + ' mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + '.\\n\\nActualmente registra ' + $json.diasAtraso + ' dias de atraso.\\n\\nFecha de vencimiento:\\n' + $json.cuota.fechaVencimiento + '\\n\\nSaldo pendiente actual del prestamo:\\n$' + $json.saldoPendientePrestamo + '\\n\\nSolicitamos que se acerque de manera urgente a la cooperativa o se comunique con el area responsable para revisar y regularizar su situacion.\\n\\nDe mantenerse el incumplimiento, la obligacion podra continuar con los procedimientos de cobranza establecidos por la institucion.\\n\\nSi existe un pago o acuerdo reciente, comuniquese con el area responsable para actualizar su situacion.' }}",
-                "type": "string"
-              },
-              {
-                "id": "4c3c4d0f-8397-4d48-8485-8554c04c9bc1-mensajeWhatsapp",
-                "name": "mensajeWhatsapp",
-                "value": "={{ 'URGENTE\\n\\nHola ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + '.\\n\\nSu cuota No. ' + $json.cuota.numeroCuota + ' mantiene un saldo pendiente de $' + $json.cuota.saldoPendiente + ' y registra ' + $json.diasAtraso + ' dias de atraso.\\n\\nSaldo pendiente total:\\n$' + $json.saldoPendientePrestamo + '\\n\\nSolicitamos que se acerque urgentemente a la cooperativa o se comunique con el area responsable para regularizar su situacion.' }}",
+                "value": "={{ 'Revision critica para ' + $json.cliente.nombres + ' ' + $json.cliente.apellidos + ': su deuda presenta atraso critico. La cuota ' + $json.cuota.numeroCuota + ' registra ' + $json.diasAtraso + ' dias de atraso y saldo pendiente de $' + $json.cuota.saldoPendiente + '. Se requiere contacto urgente con el area de cobranza.' }}",
                 "type": "string"
               }
             ]
@@ -491,7 +479,7 @@
           "sendBody": true,
           "contentType": "json",
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO'] }) }}",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -510,7 +498,7 @@
           "sendBody": true,
           "contentType": "json",
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO'] }) }}",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -529,7 +517,7 @@
           "sendBody": true,
           "contentType": "json",
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, mensajeWhatsapp: $json.mensajeWhatsapp, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -548,7 +536,7 @@
           "sendBody": true,
           "contentType": "json",
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, mensajeWhatsapp: $json.mensajeWhatsapp, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
+          "jsonBody": "={{ JSON.stringify({ cuotaId: $json.cuota.id, tipoGestion: $json.tipoGestion, diasAtraso: $json.diasAtraso, nivelRiesgo: $json.riesgo, prioridad: $json.prioridad, accion: $json.accion, mensaje: $json.mensaje, modo: $json.modo, canales: ['CORREO', 'WHATSAPP'] }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",

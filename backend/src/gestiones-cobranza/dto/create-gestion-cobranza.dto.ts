@@ -38,6 +38,10 @@ export class CreateGestionCobranzaDto {
 
   @IsOptional()
   @IsString()
+  mensajeWhatsapp?: string;
+
+  @IsOptional()
+  @IsString()
   modo?: string;
 
   @IsOptional()

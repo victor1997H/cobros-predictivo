@@ -8,7 +8,9 @@ import { CuotaRepository } from './repositories/cuota.repository';
 describe('CuotasService', () => {
   let service: CuotasService;
   let cuotaRepository: {
+    findForGestionCobranza: jest.Mock;
     findPendientesParaPago: jest.Mock;
+    calcularSaldoPendientePorPrestamos: jest.Mock;
   };
 
   const cliente = {
@@ -58,12 +60,38 @@ describe('CuotasService', () => {
 
   beforeEach(() => {
     cuotaRepository = {
+      findForGestionCobranza: jest.fn(),
       findPendientesParaPago: jest.fn(),
+      calcularSaldoPendientePorPrestamos: jest.fn(),
     };
 
     service = new CuotasService(
       cuotaRepository as unknown as CuotaRepository,
       {} as PrestamoRepository,
+    );
+  });
+
+  it('incluye saldo pendiente del prestamo calculado para n8n cobranza', async () => {
+    cuotaRepository.findForGestionCobranza.mockResolvedValue([
+      crearCuota({
+        id: 11,
+        saldoPendiente: 250,
+      }),
+    ]);
+    cuotaRepository.calcularSaldoPendientePorPrestamos.mockResolvedValue(
+      new Map([[prestamo.id, 1200]]),
+    );
+
+    const response = await service.findGestionCobranza();
+
+    expect(
+      cuotaRepository.calcularSaldoPendientePorPrestamos,
+    ).toHaveBeenCalledWith([prestamo.id]);
+    expect(response.cuotas).toHaveLength(1);
+    expect(response.cuotas[0]).toEqual(
+      expect.objectContaining({
+        saldoPendientePrestamo: 1200,
+      }),
     );
   });
 

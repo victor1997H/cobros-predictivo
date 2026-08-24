@@ -54,6 +54,7 @@ export interface CuotaGestionCobranza {
   tipoGestion: 'VENCE_MANANA' | 'VENCIDA';
   diasAtraso: number;
   nivelRiesgo: NivelRiesgo;
+  saldoPendientePrestamo: number;
 }
 
 export interface GestionCobranzaResponse {
@@ -124,6 +125,10 @@ export class CuotasService {
       today,
       tomorrow,
     );
+    const saldoPorPrestamo =
+      await this.cuotaRepository.calcularSaldoPendientePorPrestamos(
+        this.obtenerPrestamoIds(cuotas),
+      );
 
     return {
       success: true,
@@ -131,7 +136,7 @@ export class CuotasService {
       fechaReferencia: today,
       fechaManana: tomorrow,
       cuotas: cuotas.map((cuota) =>
-        this.toGestionCobranzaItem(cuota, today, tomorrow),
+        this.toGestionCobranzaItem(cuota, today, tomorrow, saldoPorPrestamo),
       ),
     };
   }
@@ -232,6 +237,7 @@ export class CuotasService {
     cuota: Cuota,
     today: string,
     tomorrow: string,
+    saldoPorPrestamo: Map<number, number>,
   ): CuotaGestionCobranza {
     const diasAtraso = this.calculateDiasAtraso(cuota.fechaVencimiento, today);
 
@@ -263,7 +269,12 @@ export class CuotasService {
         cuota.fechaVencimiento === tomorrow ? 'VENCE_MANANA' : 'VENCIDA',
       diasAtraso,
       nivelRiesgo: clasificarRiesgo(diasAtraso),
+      saldoPendientePrestamo: saldoPorPrestamo.get(cuota.prestamoId) ?? 0,
     };
+  }
+
+  private obtenerPrestamoIds(cuotas: Cuota[]): number[] {
+    return Array.from(new Set(cuotas.map((cuota) => cuota.prestamoId)));
   }
 
   private esCuotaDisponibleParaPago(cuota: Cuota): boolean {

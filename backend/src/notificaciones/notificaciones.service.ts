@@ -15,6 +15,7 @@ export interface NotificacionGestionPayload {
   clienteTelefono: string;
   asunto: string;
   mensaje: string;
+  mensajeWhatsapp?: string;
   cuotaNumero: number;
   saldoPendiente: number;
   diasAtraso: number;
@@ -100,7 +101,12 @@ export class NotificacionesService {
     }
 
     if (canales.has('WHATSAPP')) {
-      resultados.push(await this.enviarWhatsapp(payload));
+      resultados.push(
+        await this.enviarWhatsapp({
+          ...payload,
+          mensaje: payload.mensajeWhatsapp ?? payload.mensaje,
+        }),
+      );
     }
 
     return resultados;

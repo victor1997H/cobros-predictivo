@@ -83,6 +83,30 @@ export class CuotaRepository {
     });
   }
 
+  async calcularSaldoPendientePorPrestamos(
+    prestamoIds: number[],
+  ): Promise<Map<number, number>> {
+    if (prestamoIds.length === 0) {
+      return new Map<number, number>();
+    }
+
+    const rows = await this.repository
+      .createQueryBuilder('cuota')
+      .select('cuota.prestamoId', 'prestamoId')
+      .addSelect('COALESCE(SUM(cuota.saldoPendiente), 0)', 'saldoPendiente')
+      .where('cuota.prestamoId IN (:...prestamoIds)', { prestamoIds })
+      .andWhere('cuota.saldoPendiente > 0')
+      .groupBy('cuota.prestamoId')
+      .getRawMany<{ prestamoId: string; saldoPendiente: string }>();
+
+    return new Map(
+      rows.map((row) => [
+        Number(row.prestamoId),
+        Number(Number(row.saldoPendiente).toFixed(2)),
+      ]),
+    );
+  }
+
   create(data: CreateCuotaData, prestamo: Prestamo): Cuota {
     return this.repository.create({
       ...data,

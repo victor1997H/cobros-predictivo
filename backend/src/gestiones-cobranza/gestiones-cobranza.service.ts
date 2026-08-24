@@ -98,10 +98,18 @@ export class GestionesCobranzaService {
 
     const cliente = cuota.prestamo.cliente;
     const clienteNombre = `${cliente.nombres} ${cliente.apellidos}`;
-    const mensaje = this.sincronizarSaldoEnMensaje(
+    const mensaje = this.sincronizarSaldosEnMensaje(
       data.mensaje,
       saldoPendienteActual,
+      saldoPendientePrestamo,
     );
+    const mensajeWhatsapp = data.mensajeWhatsapp
+      ? this.sincronizarSaldosEnMensaje(
+          data.mensajeWhatsapp,
+          saldoPendienteActual,
+          saldoPendientePrestamo,
+        )
+      : undefined;
     const resultados = await this.notificacionesService.enviarGestion({
       canales,
       clienteNombre,
@@ -109,6 +117,7 @@ export class GestionesCobranzaService {
       clienteTelefono: cliente.telefono,
       asunto: `CobrosPredictivo - ${data.accion}`,
       mensaje,
+      mensajeWhatsapp,
       cuotaNumero: cuota.numeroCuota,
       saldoPendiente: saldoPendienteActual,
       diasAtraso: data.diasAtraso,
@@ -219,14 +228,27 @@ export class GestionesCobranzaService {
     return mensajes[motivo];
   }
 
-  private sincronizarSaldoEnMensaje(
+  private sincronizarSaldosEnMensaje(
     mensaje: string,
     saldoPendienteActual: number,
+    saldoPendientePrestamo: number,
   ): string {
-    return mensaje.replace(
-      /(saldo pendiente(?: de)?\s*:?\s*\$)\d+(?:[.,]\d+)?/gi,
-      `$1${this.formatearMonto(saldoPendienteActual)}`,
-    );
+    const saldoCuota = this.formatearMonto(saldoPendienteActual);
+    const saldoPrestamo = this.formatearMonto(saldoPendientePrestamo);
+
+    return mensaje
+      .replace(
+        /(saldo pendiente(?:\s+actual)?(?:\s+de|\s+del)?\s+(?:su\s+)?prestamo\s*:?\s*\n?\s*\$)\d+(?:[.,]\d+)?/gi,
+        `$1${saldoPrestamo}`,
+      )
+      .replace(
+        /(saldo pendiente total(?:\s+del\s+prestamo)?\s*:?\s*\n?\s*\$)\d+(?:[.,]\d+)?/gi,
+        `$1${saldoPrestamo}`,
+      )
+      .replace(
+        /(saldo pendiente(?:\s+de\s+la\s+cuota)?\s*(?:de|:)?\s*\$)\d+(?:[.,]\d+)?/gi,
+        `$1${saldoCuota}`,
+      );
   }
 
   private formatearMonto(value: number): string {

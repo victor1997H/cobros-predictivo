@@ -5,7 +5,10 @@ import { DataSource } from 'typeorm';
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { Cuota } from '../cuotas/entities/cuota.entity';
 import { CuotaRepository } from '../cuotas/repositories/cuota.repository';
-import { ResultadoNotificacion } from '../notificaciones/notificaciones.service';
+import {
+  CanalNotificacion,
+  ResultadoNotificacion,
+} from '../notificaciones/notificaciones.service';
 import { Prestamo } from '../prestamos/entities/prestamo.entity';
 import { CreateGestionCobranzaDto } from './dto/create-gestion-cobranza.dto';
 import { GestionCobranza } from './entities/gestion-cobranza.entity';
@@ -197,6 +200,72 @@ describe('GestionesCobranzaService', () => {
     expect(payload.saldoPendiente).toBe(200);
     expect(payload.mensaje).toContain('Saldo pendiente: $200');
     expect(response.gestion?.mensaje).toContain('Saldo pendiente: $200');
+  });
+
+  it.each<[string, string, string, CanalNotificacion[], string | undefined]>([
+    ['BAJO', 'BAJA', 'Aviso preventivo', ['CORREO'], undefined],
+    ['MEDIO', 'MEDIA', 'Recordatorio de mora temprana', ['CORREO'], undefined],
+    [
+      'ALTO',
+      'ALTA',
+      'Seguimiento prioritario',
+      ['CORREO', 'WHATSAPP'],
+      'Mensaje corto de WhatsApp para riesgo alto',
+    ],
+    [
+      'CRITICO',
+      'MAXIMA',
+      'Revision critica',
+      ['CORREO', 'WHATSAPP'],
+      'Mensaje corto de WhatsApp para riesgo critico',
+    ],
+  ])(
+    'respeta canales definitivos para riesgo %s',
+    async (nivelRiesgo, prioridad, accion, canales, mensajeWhatsapp) => {
+      await service.create({
+        ...dtoBase,
+        nivelRiesgo,
+        prioridad,
+        accion,
+        canales,
+        mensajeWhatsapp,
+      });
+      const payload = notificacionesService.enviarGestion.mock.calls[0][0];
+
+      expect(payload.canales).toEqual(canales);
+      expect(payload.mensajeWhatsapp).toBe(mensajeWhatsapp);
+    },
+  );
+
+  it('usa saldos actuales de cuota y prestamo cuando n8n envia saldos viejos', async () => {
+    const cuotaActual = crearCuota(200, 'PENDIENTE');
+
+    cuotaRepository.findById.mockResolvedValueOnce(cuotaActual);
+    cuotasParaSaldoPrestamo = [
+      cuotaActual,
+      {
+        ...crearCuota(1000, 'PENDIENTE'),
+        id: 26,
+        numeroCuota: 2,
+      },
+    ];
+
+    await service.create({
+      ...dtoBase,
+      canales: ['CORREO', 'WHATSAPP'],
+      mensaje:
+        'Saldo pendiente: $500. Saldo pendiente actual del prestamo:\n$2000.',
+      mensajeWhatsapp: 'Saldo pendiente total:\n$2000. Saldo pendiente: $500.',
+    });
+    const payload = notificacionesService.enviarGestion.mock.calls[0][0];
+
+    expect(payload.saldoPendiente).toBe(200);
+    expect(payload.mensaje).toContain('Saldo pendiente: $200');
+    expect(payload.mensaje).toContain(
+      'Saldo pendiente actual del prestamo:\n$1200',
+    );
+    expect(payload.mensajeWhatsapp).toContain('Saldo pendiente total:\n$1200');
+    expect(payload.mensajeWhatsapp).toContain('Saldo pendiente: $200');
   });
 
   it('omite gestion si la cuota fue pagada entre GET de n8n y POST al backend', async () => {
