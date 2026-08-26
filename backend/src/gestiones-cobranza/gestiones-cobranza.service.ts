@@ -98,7 +98,7 @@ export class GestionesCobranzaService {
 
     const fechaGestion =
       data.fechaGestion ?? this.getDateInTimezone(new Date());
-    const canales = this.resolveCanales(data.canales);
+    const canales = this.resolveCanales(data.canales, data.nivelRiesgo);
     const claveGestion = this.crearClaveGestion(
       fechaGestion,
       data.cuotaId,
@@ -127,7 +127,9 @@ export class GestionesCobranzaService {
       mensajeWhatsapp,
       cuotaNumero: cuota.numeroCuota,
       saldoPendiente: saldoPendienteActual,
+      saldoPendientePrestamo,
       diasAtraso: data.diasAtraso,
+      nivelRiesgo: data.nivelRiesgo,
       accion: data.accion,
     };
     const gestionExistente =
@@ -437,7 +439,20 @@ export class GestionesCobranzaService {
     return String(Number(value.toFixed(2)));
   }
 
-  private resolveCanales(canales?: CanalNotificacion[]): CanalNotificacion[] {
+  private resolveCanales(
+    canales?: CanalNotificacion[],
+    nivelRiesgo?: string,
+  ): CanalNotificacion[] {
+    const riesgo = nivelRiesgo?.toUpperCase();
+
+    if (riesgo === 'BAJO' || riesgo === 'MEDIO') {
+      return ['CORREO'];
+    }
+
+    if (riesgo === 'ALTO' || riesgo === 'CRITICO') {
+      return ['CORREO', 'WHATSAPP'];
+    }
+
     if (!canales || canales.length === 0) {
       return ['CORREO', 'WHATSAPP'];
     }

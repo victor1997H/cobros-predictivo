@@ -96,6 +96,20 @@ describe('GestionesCobranzaService', () => {
     canales: ['CORREO', 'WHATSAPP'],
   };
 
+  function crearDtoRiesgoAlto(
+    overrides: Partial<CreateGestionCobranzaDto> = {},
+  ): CreateGestionCobranzaDto {
+    return {
+      ...dtoBase,
+      nivelRiesgo: 'ALTO',
+      prioridad: 'ALTA',
+      accion: 'Seguimiento prioritario',
+      mensajeWhatsapp: 'Mensaje corto de WhatsApp para riesgo alto',
+      canales: ['CORREO', 'WHATSAPP'],
+      ...overrides,
+    };
+  }
+
   function resultadoEnvio(
     canal: CanalNotificacion,
     estado: 'ENVIADO' | 'ERROR' | 'NO_CONFIGURADO',
@@ -137,6 +151,18 @@ describe('GestionesCobranzaService', () => {
       createdAt: new Date(),
       ...overrides,
     };
+  }
+
+  function crearGestionAltoExistente(
+    overrides: Partial<GestionCobranza> = {},
+  ): GestionCobranza {
+    return crearGestionExistente({
+      nivelRiesgo: 'ALTO',
+      prioridad: 'ALTA',
+      accion: 'Seguimiento prioritario',
+      canalesSolicitados: ['CORREO', 'WHATSAPP'],
+      ...overrides,
+    });
   }
 
   beforeEach(() => {
@@ -255,6 +281,8 @@ describe('GestionesCobranzaService', () => {
 
     expect(response.procesada).toBe(true);
     expect(payload.saldoPendiente).toBe(200);
+    expect(payload.saldoPendientePrestamo).toBe(200);
+    expect(payload.nivelRiesgo).toBe('MEDIO');
     expect(payload.mensaje).toContain('Saldo pendiente: $200');
     expect(response.gestion?.mensaje).toContain('Saldo pendiente: $200');
   });
@@ -293,6 +321,17 @@ describe('GestionesCobranzaService', () => {
       expect(payload.mensajeWhatsapp).toBe(mensajeWhatsapp);
     },
   );
+
+  it('convierte riesgo MEDIO a solo correo aunque n8n envie WhatsApp', async () => {
+    await service.create({
+      ...dtoBase,
+      nivelRiesgo: 'MEDIO',
+      canales: ['CORREO', 'WHATSAPP'],
+    });
+    const payload = notificacionesService.enviarGestion.mock.calls[0][0];
+
+    expect(payload.canales).toEqual(['CORREO']);
+  });
 
   it.each([
     ['BAJO', 'BAJA', 'Aviso preventivo'],
@@ -441,6 +480,8 @@ describe('GestionesCobranzaService', () => {
     const payload = notificacionesService.enviarGestion.mock.calls[0][0];
 
     expect(payload.saldoPendiente).toBe(200);
+    expect(payload.saldoPendientePrestamo).toBe(1200);
+    expect(payload.nivelRiesgo).toBe('MEDIO');
     expect(payload.mensaje).toContain('Saldo pendiente: $200');
     expect(payload.mensaje).toContain(
       'Saldo pendiente actual del prestamo:\n$1200',
@@ -467,7 +508,8 @@ describe('GestionesCobranzaService', () => {
   });
 
   it('reintenta solo WhatsApp cuando correo ya fue enviado y WhatsApp fallo', async () => {
-    const gestionExistente = crearGestionExistente();
+    const dtoAlto = crearDtoRiesgoAlto();
+    const gestionExistente = crearGestionAltoExistente();
 
     gestionRepository.findByClaveGestion.mockResolvedValueOnce(
       gestionExistente,
@@ -476,7 +518,7 @@ describe('GestionesCobranzaService', () => {
       resultadoEnvio('WHATSAPP', 'ENVIADO'),
     ]);
 
-    const response = await service.create(dtoBase);
+    const response = await service.create(dtoAlto);
     const payload = notificacionesService.enviarGestion.mock.calls[0][0];
     const gestionGuardada = gestionRepository.save.mock.calls[0][0];
 
@@ -492,7 +534,7 @@ describe('GestionesCobranzaService', () => {
   });
 
   it('no reenvia nada cuando correo y WhatsApp ya fueron enviados', async () => {
-    const gestionExistente = crearGestionExistente({
+    const gestionExistente = crearGestionAltoExistente({
       estadoEnvio: 'ENVIADO',
       resultadoEnvio: [
         resultadoEnvio('CORREO', 'ENVIADO'),
@@ -504,7 +546,7 @@ describe('GestionesCobranzaService', () => {
       gestionExistente,
     );
 
-    const response = await service.create(dtoBase);
+    const response = await service.create(crearDtoRiesgoAlto());
 
     expect(response.procesada).toBe(true);
     expect(response.gestion).toBe(gestionExistente);
@@ -514,7 +556,7 @@ describe('GestionesCobranzaService', () => {
   });
 
   it('reintenta ambos canales cuando correo y WhatsApp fallaron', async () => {
-    const gestionExistente = crearGestionExistente({
+    const gestionExistente = crearGestionAltoExistente({
       estadoEnvio: 'ERROR',
       resultadoEnvio: [
         resultadoEnvio('CORREO', 'ERROR'),
@@ -530,7 +572,7 @@ describe('GestionesCobranzaService', () => {
       resultadoEnvio('WHATSAPP', 'ERROR'),
     ]);
 
-    await service.create(dtoBase);
+    await service.create(crearDtoRiesgoAlto());
     const payload = notificacionesService.enviarGestion.mock.calls[0][0];
     const gestionGuardada = gestionRepository.save.mock.calls[0][0];
 
@@ -603,7 +645,8 @@ describe('GestionesCobranzaService', () => {
   });
 
   it('mantiene la misma claveGestion y no crea duplicado al reintentar', async () => {
-    const gestionExistente = crearGestionExistente();
+    const dtoAlto = crearDtoRiesgoAlto();
+    const gestionExistente = crearGestionAltoExistente();
 
     gestionRepository.findByClaveGestion.mockResolvedValueOnce(
       gestionExistente,
@@ -612,7 +655,7 @@ describe('GestionesCobranzaService', () => {
       resultadoEnvio('WHATSAPP', 'ENVIADO'),
     ]);
 
-    await service.create(dtoBase);
+    await service.create(dtoAlto);
     const gestionGuardada = gestionRepository.save.mock.calls[0][0];
 
     expect(gestionRepository.create).not.toHaveBeenCalled();

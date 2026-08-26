@@ -10,6 +10,7 @@ export type EstadoNotificacion = 'ENVIADO' | 'ERROR' | 'NO_CONFIGURADO';
 
 export interface NotificacionGestionPayload {
   canales: CanalNotificacion[];
+  nivelRiesgo?: string;
   clienteNombre: string;
   clienteEmail: string;
   clienteTelefono: string;
@@ -18,6 +19,7 @@ export interface NotificacionGestionPayload {
   mensajeWhatsapp?: string;
   cuotaNumero: number;
   saldoPendiente: number;
+  saldoPendientePrestamo?: number;
   diasAtraso: number;
   accion: string;
 }
@@ -101,12 +103,16 @@ export class NotificacionesService {
     }
 
     if (canales.has('WHATSAPP')) {
-      resultados.push(
-        await this.enviarWhatsapp({
-          ...payload,
-          mensaje: payload.mensajeWhatsapp ?? payload.mensaje,
-        }),
-      );
+      const debeEnviarWhatsapp = this.debeEnviarWhatsapp(payload.nivelRiesgo);
+
+      if (debeEnviarWhatsapp) {
+        resultados.push(
+          await this.enviarWhatsapp({
+            ...payload,
+            mensaje: payload.mensajeWhatsapp ?? payload.mensaje,
+          }),
+        );
+      }
     }
 
     return resultados;
@@ -195,7 +201,7 @@ export class NotificacionesService {
     const phoneNumberId = this.getConfigValue('WHATSAPP_PHONE_NUMBER_ID');
     const apiVersion =
       this.getConfigValue('WHATSAPP_GRAPH_API_VERSION') ?? 'v26.0';
-    const templateName = this.getConfigValue('WHATSAPP_TEMPLATE_NAME');
+    const templateConfig = this.getWhatsappTemplateConfig(payload.nivelRiesgo);
     const templateLanguage =
       this.getConfigValue('WHATSAPP_TEMPLATE_LANGUAGE') ?? 'es';
     const useTemplateParameters =
@@ -217,24 +223,37 @@ export class NotificacionesService {
       );
     }
 
-    if (!templateName && !allowFreeText) {
+    if (!templateConfig && !allowFreeText) {
       return this.resultado(
         'WHATSAPP',
         'NO_CONFIGURADO',
-        'Falta plantilla aprobada de WhatsApp o WHATSAPP_SEND_FREE_TEXT=true para pruebas controladas.',
+        'Falta plantilla aprobada de WhatsApp para el nivel de riesgo o WHATSAPP_SEND_FREE_TEXT=true para pruebas controladas.',
+        'WhatsApp Cloud API',
+      );
+    }
+
+    if (
+      templateConfig?.usaVariablesCobranza &&
+      payload.saldoPendientePrestamo === undefined
+    ) {
+      return this.resultado(
+        'WHATSAPP',
+        'NO_CONFIGURADO',
+        'Falta saldoPendientePrestamo para enviar la plantilla de cobranza.',
         'WhatsApp Cloud API',
       );
     }
 
     const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
-    const body = templateName
+    const body = templateConfig
       ? this.crearMensajePlantilla(
           payload,
           telefono,
-          templateName,
+          templateConfig.name,
           templateLanguage,
-          useTemplateParameters,
-          templateBodyParameterCount,
+          templateConfig.usaVariablesCobranza || useTemplateParameters,
+          templateConfig.usaVariablesCobranza ? 5 : templateBodyParameterCount,
+          templateConfig.usaVariablesCobranza,
         )
       : this.crearMensajeTexto(payload, telefono);
 
@@ -297,6 +316,7 @@ export class NotificacionesService {
     templateLanguage: string,
     useTemplateParameters: boolean,
     templateBodyParameterCount: number,
+    usaVariablesCobranza: boolean,
   ) {
     const template: Record<string, unknown> = {
       name: templateName,
@@ -306,14 +326,16 @@ export class NotificacionesService {
     };
 
     if (useTemplateParameters) {
-      const parameters = [
-        { type: 'text', text: payload.clienteNombre },
-        { type: 'text', text: payload.accion },
-        { type: 'text', text: String(payload.cuotaNumero) },
-        { type: 'text', text: String(payload.saldoPendiente) },
-        { type: 'text', text: String(payload.diasAtraso) },
-        { type: 'text', text: payload.mensaje },
-      ];
+      const parameters = usaVariablesCobranza
+        ? this.crearParametrosCobranzaWhatsapp(payload)
+        : [
+            { type: 'text', text: payload.clienteNombre },
+            { type: 'text', text: payload.accion },
+            { type: 'text', text: String(payload.cuotaNumero) },
+            { type: 'text', text: String(payload.saldoPendiente) },
+            { type: 'text', text: String(payload.diasAtraso) },
+            { type: 'text', text: payload.mensaje },
+          ];
 
       template.components = [
         {
@@ -329,6 +351,63 @@ export class NotificacionesService {
       type: 'template',
       template,
     };
+  }
+
+  private crearParametrosCobranzaWhatsapp(payload: NotificacionGestionPayload) {
+    return [
+      { type: 'text', text: payload.clienteNombre },
+      { type: 'text', text: String(payload.cuotaNumero) },
+      { type: 'text', text: String(payload.saldoPendiente) },
+      { type: 'text', text: String(payload.diasAtraso) },
+      { type: 'text', text: String(payload.saldoPendientePrestamo) },
+    ];
+  }
+
+  private debeEnviarWhatsapp(nivelRiesgo?: string): boolean {
+    if (!nivelRiesgo) {
+      return true;
+    }
+
+    const riesgo = nivelRiesgo.toUpperCase();
+
+    return riesgo === 'ALTO' || riesgo === 'CRITICO';
+  }
+
+  private getWhatsappTemplateConfig(
+    nivelRiesgo?: string,
+  ): { name: string; usaVariablesCobranza: boolean } | undefined {
+    const riesgo = nivelRiesgo?.toUpperCase();
+
+    if (riesgo === 'ALTO') {
+      const templateAlto = this.getConfigValue('WHATSAPP_TEMPLATE_ALTO');
+
+      return templateAlto
+        ? { name: templateAlto, usaVariablesCobranza: true }
+        : undefined;
+    }
+
+    if (riesgo === 'CRITICO') {
+      const templateCritico = this.getConfigValue('WHATSAPP_TEMPLATE_CRITICO');
+
+      return templateCritico
+        ? { name: templateCritico, usaVariablesCobranza: true }
+        : undefined;
+    }
+
+    if (riesgo) {
+      return undefined;
+    }
+
+    return this.getWhatsappTemplateFallback();
+  }
+
+  private getWhatsappTemplateFallback():
+    { name: string; usaVariablesCobranza: false } | undefined {
+    const templateName = this.getConfigValue('WHATSAPP_TEMPLATE_NAME');
+
+    return templateName
+      ? { name: templateName, usaVariablesCobranza: false }
+      : undefined;
   }
 
   private normalizarTelefono(telefono: string): string {
