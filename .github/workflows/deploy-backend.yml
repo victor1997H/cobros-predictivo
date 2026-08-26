@@ -72,7 +72,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Construir y publicar imagen backend
         uses: docker/build-push-action@v6
@@ -103,7 +103,7 @@ jobs:
           BACKEND_IMAGE_TAG: ${{ github.sha }}
           BUILD_SHA: ${{ github.sha }}
           GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
