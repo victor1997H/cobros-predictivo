@@ -21,3 +21,7 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Estado local/de produccion generado por despliegues
+.deploy/
+docker-compose.override.yml

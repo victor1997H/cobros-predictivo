@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 
 export interface AppStatusResponse {
   success: boolean;
@@ -17,8 +18,18 @@ export interface AppStatusResponse {
   };
 }
 
+export interface HealthCheckResponse {
+  status: 'ok' | 'error';
+  service: string;
+  buildSha: string;
+  database: 'ok' | 'error';
+  server_time: string;
+}
+
 @Injectable()
 export class AppService {
+  constructor(private readonly dataSource: DataSource) {}
+
   getHello(): AppStatusResponse {
     return {
       success: true,
@@ -37,5 +48,35 @@ export class AppService {
         register: '/auth/register',
       },
     };
+  }
+
+  async getHealth(): Promise<HealthCheckResponse> {
+    const buildSha = this.getBuildSha();
+
+    try {
+      await this.dataSource.query('SELECT 1');
+
+      return {
+        status: 'ok',
+        service: 'cobros-backend',
+        buildSha,
+        database: 'ok',
+        server_time: new Date().toISOString(),
+      };
+    } catch {
+      throw new ServiceUnavailableException({
+        status: 'error',
+        service: 'cobros-backend',
+        buildSha,
+        database: 'error',
+        server_time: new Date().toISOString(),
+      });
+    }
+  }
+
+  private getBuildSha(): string {
+    const buildSha = process.env.BUILD_SHA?.trim();
+
+    return buildSha && buildSha.length > 0 ? buildSha : 'local';
   }
 }

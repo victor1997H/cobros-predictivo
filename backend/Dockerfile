@@ -16,6 +16,10 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
+ARG BUILD_SHA=local
+ENV BUILD_SHA=${BUILD_SHA}
+LABEL org.opencontainers.image.revision=${BUILD_SHA}
+
 COPY package*.json ./
 
 RUN npm ci --omit=dev

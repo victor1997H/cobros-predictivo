@@ -1,0 +1,190 @@
+name: Backend CI/CD Cobros Predictivo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy-backend.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-backend
+  cancel-in-progress: false
+
+env:
+  BACKEND_IMAGE: ghcr.io/victor1997h/cobros-predictivo-backend
+  HEALTH_URL: https://backsistemacobros.byronrm.com/health
+
+jobs:
+  quality-gate:
+    name: Validar backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      - name: Ejecutar lint sin modificar archivos
+        working-directory: backend
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Ejecutar tests
+        working-directory: backend
+        run: npm test -- --runInBand
+
+      - name: Compilar backend
+        working-directory: backend
+        run: npm run build
+
+  build-and-publish:
+    name: Construir y publicar backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality-gate
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construir y publicar imagen backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy-backend:
+    name: Desplegar solo backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-and-publish
+
+    steps:
+      - name: Actualizar cobros_backend en VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
+          BACKEND_IMAGE_TAG: ${{ github.sha }}
+          BUILD_SHA: ${{ github.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          envs: BACKEND_IMAGE,BACKEND_IMAGE_TAG,BUILD_SHA,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/opt/docker/apps/cobros-predictivo"
+            cd "$APP_DIR"
+
+            mkdir -p .deploy
+
+            if [ -f .deploy/backend-current.sha ]; then
+              cp .deploy/backend-current.sha .deploy/backend-previous.sha
+            fi
+
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+
+            printf '%s\n' "$GHCR_TOKEN" | docker login ghcr.io \
+              -u "$GHCR_USER" \
+              --password-stdin
+
+            cat > .deploy/backend.env <<EOF
+            BACKEND_IMAGE_TAG=$BACKEND_IMAGE_TAG
+            BUILD_SHA=$BUILD_SHA
+            EOF
+
+            cat > docker-compose.override.yml <<EOF
+            services:
+              backend:
+                image: ${BACKEND_IMAGE}:${BACKEND_IMAGE_TAG}
+                environment:
+                  BUILD_SHA: ${BUILD_SHA}
+            EOF
+
+            docker compose --env-file .env --env-file .deploy/backend.env pull backend
+            docker compose --env-file .env --env-file .deploy/backend.env up -d --no-deps backend
+            docker compose ps backend
+
+      - name: Verificar health publico
+        env:
+          HEALTH_URL: ${{ env.HEALTH_URL }}
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..18}; do
+            response="$(curl -fsS --max-time 10 "$HEALTH_URL" 2>/dev/null || true)"
+
+            if printf '%s' "$response" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"' \
+              && printf '%s' "$response" | grep -q '"database"[[:space:]]*:[[:space:]]*"ok"' \
+              && printf '%s' "$response" | grep -q "\"buildSha\"[[:space:]]*:[[:space:]]*\"$BUILD_SHA\""; then
+              echo "Backend saludable con SHA $BUILD_SHA"
+              exit 0
+            fi
+
+            echo "Health check pendiente intento $attempt/18"
+            sleep 5
+          done
+
+          echo "Health check fallido para $HEALTH_URL"
+          exit 1
+
+      - name: Registrar SHA desplegado
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          envs: BACKEND_IMAGE_TAG
+          script: |
+            set -euo pipefail
+
+            cd /opt/docker/apps/cobros-predictivo
+            mkdir -p .deploy
+            printf '%s\n' "$BACKEND_IMAGE_TAG" > .deploy/backend-current.sha
+            echo "SHA desplegado registrado"
