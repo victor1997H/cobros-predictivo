@@ -75,7 +75,12 @@ export class Login {
             return;
           }
 
-          this.authService.setCurrentUser(response.usuario, remember);
+          if (!response.token) {
+            this.errorMessage = 'No se recibio el token de autenticacion.';
+            return;
+          }
+
+          this.authService.setCurrentUser(response.usuario, remember, response.token);
           void this.router.navigate(['/dashboard']);
         },
         error: (error: unknown) => {

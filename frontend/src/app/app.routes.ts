@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/guards/auth.guard';
 import { Login } from './features/auth/pages/login/login';
 import { Register } from './features/auth/pages/register/register';
 import { ResetPassword } from './features/auth/pages/reset-password/reset-password';
@@ -43,6 +44,7 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayout,
+    canActivate: [authGuard],
     children: [
       {
         path: 'dashboard',

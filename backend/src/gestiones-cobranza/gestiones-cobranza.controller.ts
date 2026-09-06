@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateGestionCobranzaDto } from './dto/create-gestion-cobranza.dto';
 import { GestionesCobranzaService } from './gestiones-cobranza.service';
 
@@ -15,6 +16,7 @@ export class GestionesCobranzaController {
   }
 
   @Post()
+  @Public()
   create(@Body() body: CreateGestionCobranzaDto) {
     return this.gestionesCobranzaService.create(body);
   }

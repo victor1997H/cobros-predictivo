@@ -12,6 +12,7 @@ import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from './entities/user.entity';
 import { UserRepository } from './repositories/user.repository';
+import { JwtTokenService } from './services/jwt-token.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly jwtTokenService: JwtTokenService,
   ) {}
 
   async login(email: string, password: string): Promise<AuthResponseDto> {
@@ -34,10 +36,13 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales invalidas');
     }
 
+    const usuario = this.toAuthUser(user);
+
     return {
       success: true,
       message: 'Login correcto',
-      usuario: this.toAuthUser(user),
+      usuario,
+      token: this.jwtTokenService.signUser(usuario),
     };
   }
 
@@ -60,6 +65,7 @@ export class AuthService {
       success: true,
       message: 'Usuario registrado',
       usuario: this.toAuthUser(savedUser),
+      token: null,
     };
   }
 

@@ -8,4 +8,5 @@ export class AuthResponseDto {
   success!: boolean;
   message!: string;
   usuario!: AuthUserDto | null;
+  token!: string | null;
 }

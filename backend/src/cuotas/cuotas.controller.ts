@@ -9,6 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateCuotaDto } from './dto/create-cuota.dto';
 import { UpdateCuotaDto } from './dto/update-cuota.dto';
 import { CuotasService } from './cuotas.service';
@@ -23,6 +24,7 @@ export class CuotasController {
   }
 
   @Get('gestion-cobranza')
+  @Public()
   findGestionCobranza() {
     return this.cuotasService.findGestionCobranza();
   }
