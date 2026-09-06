@@ -15,6 +15,15 @@
   gap: 12px;
 }
 
+.phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+  color: var(--cp-text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 button {
   border-radius: 8px;
 }

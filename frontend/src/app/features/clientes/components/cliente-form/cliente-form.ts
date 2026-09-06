@@ -14,6 +14,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 import { Cliente, ClientePayload } from '../../models/cliente.model';
+import {
+  ECUADOR_PHONE_ERROR_KEY,
+  ecuadorianMobilePhoneValidator,
+  normalizeEcuadorianMobilePhone,
+  toEcuadorianNationalMobilePhone,
+} from '../../utils/telefono-ecuador.util';
 
 @Component({
   selector: 'app-cliente-form',
@@ -36,13 +42,21 @@ export class ClienteForm implements OnChanges {
   @Output() cancel = new EventEmitter<void>();
 
   private readonly formBuilder = inject(FormBuilder);
+  readonly telefonoEcuadorErrorKey = ECUADOR_PHONE_ERROR_KEY;
 
   readonly form = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required, Validators.maxLength(120)]],
     apellidos: ['', [Validators.required, Validators.maxLength(120)]],
     identificacion: ['', [Validators.required, Validators.maxLength(30)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
-    telefono: ['', [Validators.required, Validators.maxLength(30)]],
+    telefono: [
+      '',
+      [
+        Validators.required,
+        Validators.maxLength(30),
+        ecuadorianMobilePhoneValidator,
+      ],
+    ],
     direccion: ['', [Validators.maxLength(255)]],
     estado: [true],
   });
@@ -58,7 +72,7 @@ export class ClienteForm implements OnChanges {
         apellidos: this.cliente.apellidos,
         identificacion: this.cliente.identificacion,
         email: this.cliente.email,
-        telefono: this.cliente.telefono,
+        telefono: toEcuadorianNationalMobilePhone(this.cliente.telefono),
         direccion: this.cliente.direccion ?? '',
         estado: this.cliente.estado,
       });
@@ -89,11 +103,33 @@ export class ClienteForm implements OnChanges {
     }
 
     const value = this.form.getRawValue();
+    const normalizedPhone = normalizeEcuadorianMobilePhone(value.telefono);
+
+    if (!normalizedPhone) {
+      this.form.controls.telefono.setErrors({
+        ...(this.form.controls.telefono.errors ?? {}),
+        [ECUADOR_PHONE_ERROR_KEY]: true,
+      });
+      this.form.controls.telefono.markAsTouched();
+      return;
+    }
 
     this.save.emit({
       ...value,
+      telefono: normalizedPhone,
       direccion: value.direccion.trim() || null,
     });
+  }
+
+  formatTelefonoForDisplay(): void {
+    const telefono = this.form.controls.telefono.value;
+    const nationalPhone = toEcuadorianNationalMobilePhone(telefono);
+
+    if (nationalPhone !== telefono) {
+      this.form.controls.telefono.setValue(nationalPhone, {
+        emitEvent: false,
+      });
+    }
   }
 
   private markFormAsClean(): void {

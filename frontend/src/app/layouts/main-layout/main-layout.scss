@@ -1,17 +1,23 @@
 :host {
   display: block;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-container {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--cp-page-bg);
 }
 
 .sidebar-shell {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   flex: 0 0 260px;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .sidebar-toggle {
@@ -62,6 +68,8 @@
   flex: 1;
   display: flex;
   min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   flex-direction: column;
   transition: padding-left 0.18s ease;
 }
@@ -82,8 +90,12 @@
   }
 
   .sidebar-shell {
+    position: relative;
+    top: auto;
+    align-self: stretch;
     flex: 0 0 auto;
     width: 100%;
+    height: auto;
   }
 
   .close-toggle {

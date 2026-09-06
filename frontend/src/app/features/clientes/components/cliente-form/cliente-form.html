@@ -35,11 +35,23 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="phone-field">
       <mat-label>Tel&eacute;fono</mat-label>
-      <input matInput formControlName="telefono" autocomplete="tel" />
+      <span matTextPrefix class="phone-prefix">EC +593&nbsp;</span>
+      <input
+        matInput
+        type="tel"
+        inputmode="tel"
+        formControlName="telefono"
+        autocomplete="tel"
+        placeholder="987545679"
+        (blur)="formatTelefonoForDisplay()"
+      />
       @if (form.controls.telefono.hasError('required')) {
         <mat-error>El tel&eacute;fono es obligatorio</mat-error>
+      }
+      @if (form.controls.telefono.hasError(telefonoEcuadorErrorKey)) {
+        <mat-error>Ingresa un n&uacute;mero m&oacute;vil ecuatoriano v&aacute;lido.</mat-error>
       }
     </mat-form-field>
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { Cliente } from './entities/cliente.entity';
 import { ClienteRepository } from './repositories/cliente.repository';
+import { normalizeEcuadorianMobilePhone } from './utils/telefono-ecuador.util';
 
 export interface ClienteResponse {
   success: boolean;
@@ -46,10 +48,18 @@ export class ClientesService {
   }
 
   async create(data: CreateClienteDto): Promise<ClienteResponse> {
-    await this.validateUniqueFields(data.identificacion, data.email);
+    const normalizedData = {
+      ...data,
+      telefono: this.normalizeTelefono(data.telefono),
+    };
+
+    await this.validateUniqueFields(
+      normalizedData.identificacion,
+      normalizedData.email,
+    );
 
     try {
-      const cliente = this.clienteRepository.create(data);
+      const cliente = this.clienteRepository.create(normalizedData);
       const savedCliente = await this.clienteRepository.save(cliente);
 
       return {
@@ -64,19 +74,31 @@ export class ClientesService {
 
   async update(id: number, data: UpdateClienteDto): Promise<ClienteResponse> {
     const cliente = await this.findClienteById(id);
+    const normalizedData: UpdateClienteDto = {
+      ...data,
+    };
 
-    if (data.identificacion && data.identificacion !== cliente.identificacion) {
+    if (data.telefono !== undefined) {
+      normalizedData.telefono = this.normalizeTelefono(data.telefono);
+    }
+
+    if (
+      normalizedData.identificacion &&
+      normalizedData.identificacion !== cliente.identificacion
+    ) {
       const existingByIdentificacion =
-        await this.clienteRepository.findByIdentificacion(data.identificacion);
+        await this.clienteRepository.findByIdentificacion(
+          normalizedData.identificacion,
+        );
 
       if (existingByIdentificacion) {
         throw new ConflictException('La identificacion ya esta registrada');
       }
     }
 
-    if (data.email && data.email !== cliente.email) {
+    if (normalizedData.email && normalizedData.email !== cliente.email) {
       const existingByEmail = await this.clienteRepository.findByEmail(
-        data.email,
+        normalizedData.email,
       );
 
       if (existingByEmail) {
@@ -85,7 +107,10 @@ export class ClientesService {
     }
 
     try {
-      const updatedCliente = this.clienteRepository.merge(cliente, data);
+      const updatedCliente = this.clienteRepository.merge(
+        cliente,
+        normalizedData,
+      );
       const savedCliente = await this.clienteRepository.save(updatedCliente);
 
       return {
@@ -135,6 +160,18 @@ export class ClientesService {
     }
 
     return cliente;
+  }
+
+  private normalizeTelefono(telefono: string): string {
+    const normalizedPhone = normalizeEcuadorianMobilePhone(telefono);
+
+    if (!normalizedPhone) {
+      throw new BadRequestException(
+        'Ingresa un numero movil ecuatoriano valido.',
+      );
+    }
+
+    return normalizedPhone;
   }
 
   private handlePersistenceError(error: unknown): never {
