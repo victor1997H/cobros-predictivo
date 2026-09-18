@@ -1,12 +1,7 @@
 <section class="prestamos-page">
-  <div class="page-header">
-    <div>
-      <h2>Prestamos</h2>
-      <p>Registra prestamos por cliente y genera sus cuotas.</p>
-    </div>
-
+  <div class="page-actions">
     <button mat-flat-button color="primary" type="button" (click)="newPrestamo()">
-      Nuevo prestamo
+      Nuevo pr&eacute;stamo
     </button>
   </div>
 
@@ -21,7 +16,7 @@
   <section class="summary-grid" aria-label="Resumen de prestamos">
     <mat-card class="summary-card">
       <mat-card-content>
-        <span>Prestamos</span>
+        <span>Pr&eacute;stamos</span>
         <strong>{{ prestamos().length }}</strong>
       </mat-card-content>
     </mat-card>
@@ -52,7 +47,7 @@
     <mat-card class="form-card">
       <mat-card-header>
         <mat-card-title>
-          {{ selectedPrestamo() ? 'Editar prestamo' : 'Nuevo prestamo' }}
+          {{ selectedPrestamo() ? 'Editar pr&eacute;stamo' : 'Nuevo pr&eacute;stamo' }}
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -89,10 +84,10 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Numero de cuotas</mat-label>
+              <mat-label>N&uacute;mero de cuotas</mat-label>
               <input matInput type="number" min="1" step="1" formControlName="numeroCuotas" />
               @if (form.controls.numeroCuotas.hasError('required')) {
-                <mat-error>Ingresa el numero de cuotas</mat-error>
+                <mat-error>Ingresa el n&uacute;mero de cuotas</mat-error>
               }
             </mat-form-field>
 
@@ -118,12 +113,12 @@
           }
 
           <mat-checkbox formControlName="generarCuotas">
-            Generar cuotas automaticamente al crear el prestamo
+            Generar cuotas autom&aacute;ticamente al crear el pr&eacute;stamo
           </mat-checkbox>
 
           @if (selectedPrestamo()) {
             <p class="form-note">
-              La generacion automatica solo se aplica al crear un prestamo nuevo.
+              La generaci&oacute;n autom&aacute;tica solo se aplica al crear un pr&eacute;stamo nuevo.
             </p>
           }
 
@@ -132,7 +127,7 @@
               Cancelar
             </button>
             <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
-              {{ isSaving() ? 'Guardando...' : selectedPrestamo() ? 'Actualizar prestamo' : 'Crear prestamo' }}
+              {{ isSaving() ? 'Guardando...' : selectedPrestamo() ? 'Actualizar pr&eacute;stamo' : 'Crear pr&eacute;stamo' }}
             </button>
           </div>
         </form>
@@ -144,8 +139,8 @@
     <mat-card-content>
       <div class="table-toolbar">
         <div>
-          <h3>Cartera de prestamos</h3>
-          <p>Prestamos conectados con clientes y cuotas del sistema.</p>
+          <h3>Pr&eacute;stamos registrados</h3>
+          <p>Pr&eacute;stamos registrados por cada socio.</p>
         </div>
 
         <button mat-button type="button" [disabled]="isLoading()" (click)="loadData()">
@@ -154,9 +149,9 @@
       </div>
 
       @if (isLoading()) {
-        <p class="loading">Cargando prestamos...</p>
+        <p class="loading">Cargando pr&eacute;stamos...</p>
       } @else if (prestamos().length === 0) {
-        <p class="empty">No existen prestamos registrados.</p>
+        <p class="empty">No existen pr&eacute;stamos registrados.</p>
       } @else {
         <div class="table-wrapper">
           <table mat-table [dataSource]="prestamos()">

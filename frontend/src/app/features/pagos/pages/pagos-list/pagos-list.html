@@ -1,10 +1,5 @@
 <section class="pagos-page">
-  <div class="page-header">
-    <div>
-      <h2>Pagos</h2>
-      <p>Registra pagos reales contra cuotas pendientes o vencidas.</p>
-    </div>
-
+  <div class="page-actions">
     <button
       mat-flat-button
       color="primary"
@@ -137,7 +132,12 @@
 
   <mat-card class="table-card">
     <mat-card-content>
-      <h3>Historial de pagos</h3>
+      <div class="table-toolbar">
+        <div>
+          <h3>Historial de pagos</h3>
+          <p>Pagos realizados sobre cuotas pendientes o vencidas.</p>
+        </div>
+      </div>
 
       @if (isLoading()) {
         <p class="loading">Cargando pagos...</p>

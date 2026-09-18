@@ -47,7 +47,14 @@ export class ClienteForm implements OnChanges {
   readonly form = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required, Validators.maxLength(120)]],
     apellidos: ['', [Validators.required, Validators.maxLength(120)]],
-    identificacion: ['', [Validators.required, Validators.maxLength(30)]],
+    identificacion: [
+      '',
+      [
+        Validators.required,
+        Validators.maxLength(10),
+        Validators.pattern(/^\d{10}$/),
+      ],
+    ],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
     telefono: [
       '',
@@ -119,6 +126,15 @@ export class ClienteForm implements OnChanges {
       telefono: normalizedPhone,
       direccion: value.direccion.trim() || null,
     });
+  }
+
+  sanitizeIdentificacion(): void {
+    const control = this.form.controls.identificacion;
+    const sanitizedValue = control.value.replace(/\D/g, '').slice(0, 10);
+
+    if (sanitizedValue !== control.value) {
+      control.setValue(sanitizedValue, { emitEvent: false });
+    }
   }
 
   formatTelefonoForDisplay(): void {

@@ -1,8 +1,12 @@
-<section class="configuracion-page">
-  <div class="page-header">
+<section class="seguimiento-page">
+  <section class="intro-panel">
     <div>
-      <h2>Configuraci&oacute;n</h2>
-      <p>Estado de las integraciones principales del sistema.</p>
+      <p class="eyebrow">Centro de seguimiento</p>
+      <h2>Casos que necesitan atenci&oacute;n</h2>
+      <p>
+        Revisa los casos que necesitan atenci&oacute;n y las gestiones de cobro
+        realizadas.
+      </p>
     </div>
 
     <button
@@ -10,111 +14,145 @@
       color="primary"
       type="button"
       [disabled]="isLoading()"
-      (click)="loadEstadoSistema()"
+      (click)="loadCentroSeguimiento()"
     >
-      Verificar
+      Actualizar casos
     </button>
-  </div>
-
-  <section class="summary-grid" aria-label="Resumen de configuracion">
-    <mat-card class="summary-card">
-      <mat-card-content>
-        <span>Servicios operativos</span>
-        <strong>{{ serviciosOperativos() }}</strong>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card">
-      <mat-card-content>
-        <span>Servicios con error</span>
-        <strong>{{ serviciosConError() }}</strong>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card">
-      <mat-card-content>
-        <span>Estado general</span>
-        <strong class="state-text" [class.error-text]="!sistemaOperativo()">
-          {{ sistemaOperativo() ? 'Listo' : 'Revisar' }}
-        </strong>
-      </mat-card-content>
-    </mat-card>
   </section>
 
-  <mat-card class="config-card">
-    <mat-card-content>
-      <h3>Entorno actual</h3>
-      <dl>
-        <div>
-          <dt>Frontend</dt>
-          <dd>{{ frontendUrl() }}</dd>
-        </div>
-        <div>
-          <dt>Backend</dt>
-          <dd>{{ backendUrl() }}</dd>
-        </div>
-        <div>
-          <dt>n8n</dt>
-          <dd>{{ n8nUrl() }}</dd>
-        </div>
-      </dl>
-    </mat-card-content>
-  </mat-card>
-
-  <section class="settings-grid">
-    <mat-card class="config-card">
+  <section class="summary-grid" aria-label="Resumen de atencion">
+    <mat-card class="summary-card critical">
       <mat-card-content>
-        <h3>Automatizaci&oacute;n</h3>
-        <p class="setting-text">
-          n8n consulta cuotas, clasifica riesgos, env&iacute;a notificaciones y registra
-          cada gesti&oacute;n en el backend para seguimiento.
-        </p>
-        <div class="integration-list" aria-label="Canales de automatizacion">
-          <span class="integration-pill">n8n</span>
-          <span class="integration-pill">Correo</span>
-          <span class="integration-pill">WhatsApp</span>
-          <span class="integration-pill">Registro backend</span>
-        </div>
+        <span>Casos cr&iacute;ticos</span>
+        <strong>{{ casosCriticos() }}</strong>
       </mat-card-content>
     </mat-card>
+
+    <mat-card class="summary-card high">
+      <mat-card-content>
+        <span>Riesgo alto</span>
+        <strong>{{ casosAlto() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card overdue">
+      <mat-card-content>
+        <span>Cuotas vencidas</span>
+        <strong>{{ cuotasVencidas() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    @if (mostrarAtencionOperador()) {
+      <mat-card class="summary-card operator">
+        <mat-card-content>
+          <span>Atenci&oacute;n del operador</span>
+          <strong>{{ atencionOperador() }}</strong>
+        </mat-card-content>
+      </mat-card>
+    }
   </section>
 
-  <mat-card class="table-card">
+  <mat-card class="cases-card">
     <mat-card-content>
-      <h3>Verificaci&oacute;n de servicios</h3>
+      <div class="section-header">
+        <div>
+          <h3>Casos para revisar</h3>
+          <p>Prioridad por nivel de riesgo y mayor mora primero.</p>
+        </div>
+
+        <div class="filters" aria-label="Filtros por prioridad">
+          @for (filtro of filtros; track filtro.value) {
+            <button
+              mat-stroked-button
+              type="button"
+              [class.active]="filtroActivo() === filtro.value"
+              (click)="setFiltro(filtro.value)"
+            >
+              {{ filtro.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="error-message">{{ errorMessage() }}</p>
+      }
 
       @if (isLoading()) {
-        <p class="loading">Verificando servicios...</p>
+        <p class="loading">Cargando casos para seguimiento...</p>
+      } @else if (casosFiltrados().length === 0) {
+        <div class="empty-state">
+          <h4>Todo al d&iacute;a</h4>
+          <p>No hay casos que necesiten atenci&oacute;n en este momento.</p>
+        </div>
       } @else {
         <div class="table-wrapper">
-          <table mat-table [dataSource]="servicios()">
-            <ng-container matColumnDef="nombre">
-              <th mat-header-cell *matHeaderCellDef>Servicio</th>
-              <td mat-cell *matCellDef="let servicio">
-                {{ servicio.nombre }}
+          <table mat-table [dataSource]="casosFiltrados()">
+            <ng-container matColumnDef="socio">
+              <th mat-header-cell *matHeaderCellDef>Socio</th>
+              <td mat-cell *matCellDef="let caso">
+                <strong>{{ caso.socio }}</strong>
+                <span>Cuota N.&deg; {{ caso.numeroCuota }}</span>
               </td>
             </ng-container>
 
-            <ng-container matColumnDef="origen">
-              <th mat-header-cell *matHeaderCellDef>Origen</th>
-              <td mat-cell *matCellDef="let servicio">
-                {{ servicio.origen }}
+            <ng-container matColumnDef="saldo">
+              <th mat-header-cell *matHeaderCellDef>Saldo pendiente</th>
+              <td mat-cell *matCellDef="let caso">
+                <strong>{{ caso.saldoPendienteTexto }}</strong>
+                <span>Pr&eacute;stamo: {{ caso.saldoPrestamoTexto }}</span>
               </td>
             </ng-container>
 
-            <ng-container matColumnDef="estado">
-              <th mat-header-cell *matHeaderCellDef>Estado</th>
-              <td mat-cell *matCellDef="let servicio">
-                <span class="status-badge" [class.error]="servicio.estado === 'ERROR'">
-                  {{ servicio.estado }}
+            <ng-container matColumnDef="vencimiento">
+              <th mat-header-cell *matHeaderCellDef>Vencimiento</th>
+              <td mat-cell *matCellDef="let caso">
+                {{ caso.fechaVencimientoTexto }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="mora">
+              <th mat-header-cell *matHeaderCellDef>D&iacute;as de mora</th>
+              <td mat-cell *matCellDef="let caso">
+                {{ caso.diasMoraTexto }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="riesgo">
+              <th mat-header-cell *matHeaderCellDef>Nivel de riesgo</th>
+              <td mat-cell *matCellDef="let caso">
+                <span
+                  class="risk-badge"
+                  [class.bajo]="caso.nivelRiesgo === 'BAJO'"
+                  [class.medio]="caso.nivelRiesgo === 'MEDIO'"
+                  [class.alto]="caso.nivelRiesgo === 'ALTO'"
+                  [class.critico]="caso.nivelRiesgo === 'CRITICO'"
+                >
+                  {{ caso.riesgoTexto }}
                 </span>
               </td>
             </ng-container>
 
-            <ng-container matColumnDef="detalle">
-              <th mat-header-cell *matHeaderCellDef>Detalle</th>
-              <td mat-cell *matCellDef="let servicio">
-                {{ servicio.detalle }}
+            <ng-container matColumnDef="gestion">
+              <th mat-header-cell *matHeaderCellDef>&Uacute;ltima gesti&oacute;n</th>
+              <td mat-cell *matCellDef="let caso">
+                {{ caso.ultimaGestionTexto }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="canal">
+              <th mat-header-cell *matHeaderCellDef>Canal</th>
+              <td mat-cell *matCellDef="let caso">
+                {{ caso.canalTexto }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="accion">
+              <th mat-header-cell *matHeaderCellDef>Acci&oacute;n</th>
+              <td mat-cell *matCellDef="let caso">
+                <a mat-stroked-button [routerLink]="caso.accionRuta">
+                  Ver caso
+                </a>
               </td>
             </ng-container>
 
@@ -125,4 +163,33 @@
       }
     </mat-card-content>
   </mat-card>
+
+  @if (gestionesRecientes().length > 0) {
+    <mat-card class="recent-card">
+      <mat-card-content>
+        <div class="section-header compact">
+          <div>
+            <h3>Gestiones recientes</h3>
+            <p>&Uacute;ltimos avisos y seguimientos registrados.</p>
+          </div>
+        </div>
+
+        <div class="recent-list">
+          @for (gestion of gestionesRecientes(); track gestion.fechaTexto + gestion.socio) {
+            <article class="recent-item">
+              <div>
+                <strong>{{ gestion.socio }}</strong>
+                <span>{{ gestion.accion }}</span>
+              </div>
+              <div class="recent-meta">
+                <span>{{ gestion.riesgoTexto }}</span>
+                <span>{{ gestion.canalTexto }}</span>
+                <span>{{ gestion.fechaTexto }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
 </section>

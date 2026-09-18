@@ -1,10 +1,5 @@
 <section class="cuotas-page">
-  <div class="page-header">
-    <div>
-      <h2>Cuotas</h2>
-      <p>Administra vencimientos, saldos y estados conectados a prestamos.</p>
-    </div>
-
+  <div class="page-actions">
     <button mat-flat-button color="primary" type="button" (click)="newCuota()">
       Nueva cuota
     </button>
@@ -52,7 +47,7 @@
         <form class="cuota-form" [formGroup]="form" (ngSubmit)="submit()">
           <div class="form-grid">
             <mat-form-field appearance="outline">
-              <mat-label>Prestamo</mat-label>
+              <mat-label>Pr&eacute;stamo</mat-label>
               <mat-select formControlName="prestamoId">
                 @for (prestamo of prestamos(); track prestamo.id) {
                   <mat-option [value]="prestamo.id">
@@ -61,15 +56,15 @@
                 }
               </mat-select>
               @if (form.controls.prestamoId.hasError('required')) {
-                <mat-error>Selecciona un prestamo</mat-error>
+                <mat-error>Selecciona un pr&eacute;stamo</mat-error>
               }
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Numero de cuota</mat-label>
+              <mat-label>N&uacute;mero de cuota</mat-label>
               <input matInput type="number" min="1" step="1" formControlName="numeroCuota" />
               @if (form.controls.numeroCuota.hasError('required')) {
-                <mat-error>Ingresa el numero de cuota</mat-error>
+                <mat-error>Ingresa el n&uacute;mero de cuota</mat-error>
               }
             </mat-form-field>
 
@@ -125,7 +120,7 @@
       <div class="table-toolbar">
         <div>
           <h3>Calendario de cuotas</h3>
-          <p>Las cuotas vencidas o que vencen manana alimentan el modulo Cobros.</p>
+          <p>Cuotas pr&oacute;ximas, vencidas y pagadas.</p>
         </div>
 
         <div class="filters" aria-label="Filtros por estado">
@@ -160,7 +155,7 @@
             </ng-container>
 
             <ng-container matColumnDef="prestamo">
-              <th mat-header-cell *matHeaderCellDef>Prestamo</th>
+              <th mat-header-cell *matHeaderCellDef>Pr&eacute;stamo</th>
               <td mat-cell *matCellDef="let cuota">#{{ cuota.prestamoId }}</td>
             </ng-container>
 
@@ -208,7 +203,7 @@
                 >
                   {{ nivelRiesgo(cuota) }}
                 </span>
-                <small>{{ diasAtraso(cuota) }} dias</small>
+                <small>{{ diasAtraso(cuota) }} d&iacute;as</small>
               </td>
             </ng-container>
 

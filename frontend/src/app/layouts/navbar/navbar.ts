@@ -20,31 +20,31 @@ const PAGE_HEADERS: Record<string, PageHeader> = {
   },
   '/clientes': {
     title: 'Clientes',
-    subtitle: 'Administra la cartera de clientes registrados',
+    subtitle: 'Administra la informaci\u00f3n de los socios registrados.',
   },
   '/prestamos': {
-    title: 'Prestamos',
-    subtitle: 'Registro de prestamos asociados a clientes',
+    title: 'Pr\u00e9stamos',
+    subtitle: 'Registra pr\u00e9stamos y genera sus cuotas.',
   },
   '/cuotas': {
     title: 'Cuotas',
-    subtitle: 'Calendario de vencimientos y saldos pendientes',
+    subtitle: 'Consulta vencimientos, saldos y estado de las cuotas.',
   },
   '/cobros': {
     title: 'Cobros',
-    subtitle: 'Gesti\u00f3n de cuotas vencidas y avisos preventivos',
+    subtitle: 'Revisa las cuotas por cobrar y su nivel de riesgo.',
   },
   '/pagos': {
     title: 'Pagos',
-    subtitle: 'Registro y seguimiento de pagos de cuotas',
+    subtitle: 'Registra y consulta los pagos realizados.',
   },
   '/reportes': {
     title: 'Reportes',
-    subtitle: 'Indicadores de cartera, cobranza y recaudaci\u00f3n',
+    subtitle: 'Consulta el estado de la cartera, los cobros y la recaudaci\u00f3n.',
   },
   '/configuracion': {
-    title: 'Configuraci\u00f3n',
-    subtitle: 'Estado de servicios e integraciones del sistema',
+    title: 'Centro de seguimiento',
+    subtitle: 'Revisa los casos que necesitan atenci\u00f3n y las gestiones de cobro realizadas.',
   },
 };
 

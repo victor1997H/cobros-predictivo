@@ -1,10 +1,5 @@
 <section class="cobros-page">
-  <div class="page-header">
-    <div>
-      <h2>Gesti&oacute;n de cobros</h2>
-      <p>Cuotas vencidas y avisos preventivos obtenidos desde el backend.</p>
-    </div>
-
+  <div class="page-actions">
     <button
       mat-flat-button
       color="primary"
@@ -54,7 +49,8 @@
     <mat-card-content>
       <div class="table-toolbar">
         <div>
-          <h3>Cartera para gesti&oacute;n</h3>
+          <h3>Cuotas por cobrar</h3>
+          <p>Cuotas que requieren seguimiento o un aviso de cobro.</p>
           <p>
             Fecha de referencia:
             <strong>{{ fechaReferencia() || 'Sin cargar' }}</strong>

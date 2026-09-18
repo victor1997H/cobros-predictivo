@@ -9,153 +9,334 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
-import { catchError, finalize, forkJoin, map, of } from 'rxjs';
+import { RouterLink } from '@angular/router';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
-import { ClienteService } from '../../../../core/services/cliente.service';
-import { CobroService } from '../../../../core/services/cobro.service';
+import { CuotaService } from '../../../../core/services/cuota.service';
 import { GestionCobranzaService } from '../../../../core/services/gestion-cobranza.service';
-import { PagoService } from '../../../../core/services/pago.service';
+import {
+  CanalNotificacion,
+  GestionCobranzaRegistro,
+  GestionesCobranzaResponse,
+} from '../../../cobros/models/gestion-cobranza.model';
+import {
+  CuotaPendientePago,
+  CuotasPendientesPagoResponse,
+} from '../../../cuotas/models/cuota.model';
 
-type EstadoServicio = 'OPERATIVO' | 'ERROR';
+type NivelSeguimiento = 'BAJO' | 'MEDIO' | 'ALTO' | 'CRITICO';
+type FiltroSeguimiento = 'TODOS' | NivelSeguimiento;
 
-interface ServicioSistema {
-  nombre: string;
-  origen: string;
-  estado: EstadoServicio;
-  detalle: string;
+interface CasoSeguimiento {
+  cuotaId: number;
+  socio: string;
+  numeroCuota: number;
+  saldoPendienteTexto: string;
+  saldoPrestamoTexto: string;
+  fechaVencimientoTexto: string;
+  diasMora: number;
+  diasMoraTexto: string;
+  nivelRiesgo: NivelSeguimiento;
+  riesgoTexto: string;
+  ultimaGestionTexto: string;
+  canalTexto: string;
+  requiereOperador: boolean;
+  accionRuta: string;
+  fechaVencimiento: string;
+}
+
+interface GestionReciente {
+  socio: string;
+  accion: string;
+  riesgoTexto: string;
+  canalTexto: string;
+  fechaTexto: string;
 }
 
 @Component({
   selector: 'app-configuracion-home',
   standalone: true,
-  imports: [MatButtonModule, MatCardModule, MatTableModule],
+  imports: [MatButtonModule, MatCardModule, MatTableModule, RouterLink],
   templateUrl: './configuracion-home.html',
   styleUrl: './configuracion-home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfiguracionHome implements OnInit {
-  private readonly clienteService = inject(ClienteService);
-  private readonly cobroService = inject(CobroService);
+  private readonly cuotaService = inject(CuotaService);
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
-  private readonly pagoService = inject(PagoService);
+  private readonly currencyFormatter = new Intl.NumberFormat('es-EC', {
+    style: 'currency',
+    currency: 'USD',
+  });
+  private readonly dateFormatter = new Intl.DateTimeFormat('es-EC', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  private readonly dateTimeFormatter = new Intl.DateTimeFormat('es-EC', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  private readonly prioridadRiesgo: Record<NivelSeguimiento, number> = {
+    CRITICO: 4,
+    ALTO: 3,
+    MEDIO: 2,
+    BAJO: 1,
+  };
 
-  readonly displayedColumns = ['nombre', 'origen', 'estado', 'detalle'];
-  readonly servicios = signal<ServicioSistema[]>([]);
-  readonly frontendUrl = signal(window.location.origin);
-  readonly backendUrl = signal(
-    window.location.hostname === 'localhost'
-      ? 'http://localhost:3000'
-      : 'https://backsistemacobros.byronrm.com',
-  );
-  readonly n8nUrl = signal(
-    window.location.hostname === 'localhost'
-      ? 'http://localhost:5678'
-      : 'https://n8nsistemacobros.byronrm.com',
-  );
+  readonly displayedColumns = [
+    'socio',
+    'saldo',
+    'vencimiento',
+    'mora',
+    'riesgo',
+    'gestion',
+    'canal',
+    'accion',
+  ];
+  readonly filtros: ReadonlyArray<{ label: string; value: FiltroSeguimiento }> = [
+    { label: 'Todos', value: 'TODOS' },
+    { label: 'Cr\u00edtico', value: 'CRITICO' },
+    { label: 'Alto', value: 'ALTO' },
+    { label: 'Medio', value: 'MEDIO' },
+    { label: 'Bajo', value: 'BAJO' },
+  ];
+  readonly cuotasPendientes = signal<CuotaPendientePago[]>([]);
+  readonly gestiones = signal<GestionCobranzaRegistro[]>([]);
+  readonly filtroActivo = signal<FiltroSeguimiento>('TODOS');
   readonly isLoading = signal(false);
+  readonly errorMessage = signal('');
 
-  readonly serviciosOperativos = computed(
-    () => this.servicios().filter((servicio) => servicio.estado === 'OPERATIVO').length,
+  readonly ultimasGestionesPorCuota = computed(() => {
+    const gestionesOrdenadas = [...this.gestiones()].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const porCuota = new Map<number, GestionCobranzaRegistro>();
+
+    for (const gestion of gestionesOrdenadas) {
+      if (!porCuota.has(gestion.cuotaId)) {
+        porCuota.set(gestion.cuotaId, gestion);
+      }
+    }
+
+    return porCuota;
+  });
+
+  readonly casos = computed(() =>
+    this.cuotasPendientes()
+      .map((cuota) => this.buildCasoSeguimiento(cuota))
+      .sort((a, b) => this.compareCasos(a, b)),
   );
-  readonly serviciosConError = computed(
-    () => this.servicios().filter((servicio) => servicio.estado === 'ERROR').length,
+
+  readonly casosFiltrados = computed(() => {
+    const filtro = this.filtroActivo();
+
+    if (filtro === 'TODOS') {
+      return this.casos();
+    }
+
+    return this.casos().filter((caso) => caso.nivelRiesgo === filtro);
+  });
+
+  readonly casosCriticos = computed(
+    () => this.casos().filter((caso) => caso.nivelRiesgo === 'CRITICO').length,
   );
-  readonly sistemaOperativo = computed(
-    () => this.servicios().length > 0 && this.serviciosConError() === 0,
+  readonly casosAlto = computed(
+    () => this.casos().filter((caso) => caso.nivelRiesgo === 'ALTO').length,
+  );
+  readonly cuotasVencidas = computed(
+    () => this.casos().filter((caso) => caso.diasMora > 0).length,
+  );
+  readonly mostrarAtencionOperador = computed(() =>
+    this.gestiones().some((gestion) => Boolean(gestion.alertaInterna)),
+  );
+  readonly atencionOperador = computed(
+    () => this.casos().filter((caso) => caso.requiereOperador).length,
+  );
+  readonly gestionesRecientes = computed<GestionReciente[]>(() =>
+    [...this.gestiones()]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(0, 5)
+      .map((gestion) => ({
+        socio: gestion.clienteNombre,
+        accion: gestion.accion,
+        riesgoTexto: this.formatRiesgo(gestion.nivelRiesgo as NivelSeguimiento),
+        canalTexto: this.formatCanales(gestion.canalesSolicitados),
+        fechaTexto: this.formatDateTime(gestion.createdAt),
+      })),
   );
 
   ngOnInit(): void {
-    this.loadEstadoSistema();
+    this.loadCentroSeguimiento();
   }
 
-  loadEstadoSistema(): void {
+  loadCentroSeguimiento(): void {
     if (this.isLoading()) {
       return;
     }
 
     this.isLoading.set(true);
+    this.errorMessage.set('');
 
-    forkJoin([
-      this.clienteService.findAll().pipe(
-        map((response) =>
-          this.createSuccess(
-            'Clientes',
-            'Backend /clientes',
-            `${response.clientes.length} clientes cargados`,
-          ),
-        ),
+    forkJoin({
+      cuotas: this.cuotaService.findPendientesParaPago().pipe(
+        catchError(() => {
+          this.errorMessage.set(
+            'No se pudieron cargar los casos pendientes. Intenta nuevamente.',
+          );
+          return of({
+            success: false,
+            message: '',
+            cuotas: [],
+          } satisfies CuotasPendientesPagoResponse);
+        }),
+      ),
+      gestiones: this.gestionCobranzaService.findAll().pipe(
         catchError(() =>
-          of(this.createError('Clientes', 'Backend /clientes', 'No se pudo consultar clientes')),
+          of({
+            success: false,
+            message: '',
+            gestiones: [],
+          } satisfies GestionesCobranzaResponse),
         ),
       ),
-      this.cobroService.findGestionCobranza().pipe(
-        map((response) =>
-          this.createSuccess(
-            'Gesti\u00f3n de cobros y n8n',
-            'Backend /cuotas/gestion-cobranza',
-            `${response.cuotas.length} cuotas disponibles para automatizaci\u00f3n`,
-          ),
-        ),
-        catchError(() =>
-          of(
-            this.createError(
-              'Gesti\u00f3n de cobros y n8n',
-              'Backend /cuotas/gestion-cobranza',
-              'No se pudo consultar la gesti\u00f3n de cobros',
-            ),
-          ),
-        ),
-      ),
-      this.pagoService.findAll().pipe(
-        map((response) =>
-          this.createSuccess(
-            'Pagos',
-            'Backend /pagos',
-            `${response.pagos.length} pagos registrados`,
-          ),
-        ),
-        catchError(() =>
-          of(this.createError('Pagos', 'Backend /pagos', 'No se pudo consultar pagos')),
-        ),
-      ),
-      this.gestionCobranzaService.findAll().pipe(
-        map((response) =>
-          this.createSuccess(
-            'Gestiones registradas por n8n',
-            'Backend /gestiones-cobranza',
-            `${response.gestiones.length} gestiones guardadas`,
-          ),
-        ),
-        catchError(() =>
-          of(
-            this.createError(
-              'Gestiones registradas por n8n',
-              'Backend /gestiones-cobranza',
-              'No se pudo consultar el historial de gestiones',
-            ),
-          ),
-        ),
-      ),
-    ])
+    })
       .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe((servicios) => this.servicios.set(servicios));
+      .subscribe(({ cuotas, gestiones }) => {
+        this.cuotasPendientes.set(cuotas.cuotas);
+        this.gestiones.set(gestiones.gestiones);
+      });
   }
 
-  private createSuccess(nombre: string, origen: string, detalle: string): ServicioSistema {
+  setFiltro(filtro: FiltroSeguimiento): void {
+    this.filtroActivo.set(filtro);
+  }
+
+  private buildCasoSeguimiento(cuota: CuotaPendientePago): CasoSeguimiento {
+    const ultimaGestion = this.ultimasGestionesPorCuota().get(cuota.cuotaId);
+    const diasMora = this.calculateDiasMora(cuota.fechaVencimiento);
+    const nivelRiesgo = this.resolveNivelRiesgo(diasMora);
+
     return {
-      nombre,
-      origen,
-      detalle,
-      estado: 'OPERATIVO',
+      cuotaId: cuota.cuotaId,
+      socio: `${cuota.cliente.nombres} ${cuota.cliente.apellidos}`.trim(),
+      numeroCuota: cuota.numeroCuota,
+      saldoPendienteTexto: this.formatMoney(cuota.saldoPendiente),
+      saldoPrestamoTexto: this.formatMoney(cuota.saldoPendientePrestamo),
+      fechaVencimientoTexto: this.formatDate(cuota.fechaVencimiento),
+      diasMora,
+      diasMoraTexto: this.formatDiasMora(diasMora),
+      nivelRiesgo,
+      riesgoTexto: this.formatRiesgo(nivelRiesgo),
+      ultimaGestionTexto: ultimaGestion
+        ? `${this.formatDateTime(ultimaGestion.createdAt)} - ${ultimaGestion.accion}`
+        : 'Sin gesti\u00f3n registrada',
+      canalTexto: ultimaGestion
+        ? this.formatCanales(ultimaGestion.canalesSolicitados)
+        : 'Sin aviso registrado',
+      requiereOperador: Boolean(
+        ultimaGestion?.alertaInterna?.requiereIntervencionHumana ||
+          ultimaGestion?.alertaInterna,
+      ),
+      accionRuta: diasMora > 0 ? '/cobros' : '/pagos',
+      fechaVencimiento: cuota.fechaVencimiento,
     };
   }
 
-  private createError(nombre: string, origen: string, detalle: string): ServicioSistema {
-    return {
-      nombre,
-      origen,
-      detalle,
-      estado: 'ERROR',
-    };
+  private compareCasos(a: CasoSeguimiento, b: CasoSeguimiento): number {
+    const prioridad =
+      this.prioridadRiesgo[b.nivelRiesgo] - this.prioridadRiesgo[a.nivelRiesgo];
+
+    if (prioridad !== 0) {
+      return prioridad;
+    }
+
+    if (b.diasMora !== a.diasMora) {
+      return b.diasMora - a.diasMora;
+    }
+
+    return (
+      this.toLocalDate(a.fechaVencimiento).getTime() -
+      this.toLocalDate(b.fechaVencimiento).getTime()
+    );
+  }
+
+  private calculateDiasMora(fechaVencimiento: string): number {
+    const hoy = this.toLocalDate(new Date().toISOString().slice(0, 10));
+    const vencimiento = this.toLocalDate(fechaVencimiento);
+    const diff = hoy.getTime() - vencimiento.getTime();
+
+    return Math.max(0, Math.floor(diff / 86_400_000));
+  }
+
+  private resolveNivelRiesgo(diasMora: number): NivelSeguimiento {
+    if (diasMora >= 91) {
+      return 'CRITICO';
+    }
+
+    if (diasMora >= 31) {
+      return 'ALTO';
+    }
+
+    if (diasMora >= 1) {
+      return 'MEDIO';
+    }
+
+    return 'BAJO';
+  }
+
+  private formatRiesgo(nivelRiesgo: NivelSeguimiento): string {
+    if (nivelRiesgo === 'CRITICO') {
+      return 'Cr\u00edtico';
+    }
+
+    return nivelRiesgo.charAt(0) + nivelRiesgo.slice(1).toLowerCase();
+  }
+
+  private formatDiasMora(diasMora: number): string {
+    if (diasMora === 0) {
+      return 'Sin mora';
+    }
+
+    return diasMora === 1 ? '1 d\u00eda' : `${diasMora} d\u00edas`;
+  }
+
+  private formatCanales(canales: CanalNotificacion[] | null): string {
+    if (!canales?.length) {
+      return 'Sin aviso registrado';
+    }
+
+    const canalesUnicos = [...new Set(canales)];
+
+    return canalesUnicos
+      .map((canal) => (canal === 'CORREO' ? 'Correo' : 'WhatsApp'))
+      .join(' + ');
+  }
+
+  private formatMoney(value: number): string {
+    return this.currencyFormatter.format(value);
+  }
+
+  private formatDate(value: string): string {
+    return this.dateFormatter.format(this.toLocalDate(value));
+  }
+
+  private formatDateTime(value: string): string {
+    return this.dateTimeFormatter.format(new Date(value));
+  }
+
+  private toLocalDate(value: string): Date {
+    const [year, month, day] = value
+      .split('T')[0]
+      .split('-')
+      .map((part) => Number(part));
+
+    return new Date(year, month - 1, day);
   }
 }

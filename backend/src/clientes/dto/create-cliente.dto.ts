@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -20,7 +21,9 @@ export class CreateClienteDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(30)
+  @Matches(/^\d{10}$/, {
+    message: 'La identificacion debe tener exactamente 10 digitos numericos',
+  })
   identificacion!: string;
 
   @IsEmail()
