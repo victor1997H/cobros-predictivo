@@ -19,20 +19,23 @@ describe('validacion de identificacion de cliente', () => {
     },
   );
 
-  it.each(['172649489', '17264948991', '17264A4899', '17264-4899', 'abcdefghij'])(
-    'rechaza la identificacion invalida %s',
-    async (identificacion) => {
-      const createErrors = await validate(
-        createDto(CreateClienteDto, identificacion),
-      );
-      const updateErrors = await validate(
-        createDto(UpdateClienteDto, identificacion),
-      );
+  it.each([
+    '172649489',
+    '17264948991',
+    '17264A4899',
+    '17264-4899',
+    'abcdefghij',
+  ])('rechaza la identificacion invalida %s', async (identificacion) => {
+    const createErrors = await validate(
+      createDto(CreateClienteDto, identificacion),
+    );
+    const updateErrors = await validate(
+      createDto(UpdateClienteDto, identificacion),
+    );
 
-      expect(hasIdentificacionError(createErrors)).toBe(true);
-      expect(hasIdentificacionError(updateErrors)).toBe(true);
-    },
-  );
+    expect(hasIdentificacionError(createErrors)).toBe(true);
+    expect(hasIdentificacionError(updateErrors)).toBe(true);
+  });
 });
 
 function createDto<T extends CreateClienteDto | UpdateClienteDto>(
