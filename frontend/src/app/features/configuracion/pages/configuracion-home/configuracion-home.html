@@ -78,6 +78,10 @@
         <p class="error-message">{{ errorMessage() }}</p>
       }
 
+      @if (caseRouteMessage()) {
+        <p class="case-route-message">{{ caseRouteMessage() }}</p>
+      }
+
       @if (isLoading()) {
         <p class="loading">Cargando casos para seguimiento...</p>
       } @else if (casosFiltrados().length === 0) {
@@ -157,7 +161,12 @@
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns"
+              [attr.data-cuota-id]="row.cuotaId"
+              [class.highlighted-case]="highlightedCuotaId() === row.cuotaId"
+            ></tr>
           </table>
         </div>
       }

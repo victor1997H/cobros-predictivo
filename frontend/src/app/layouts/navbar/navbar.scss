@@ -45,7 +45,8 @@
   transition: 0.18s ease;
 
   &:hover,
-  &.has-unread {
+  &.has-alerts,
+  &[aria-expanded='true'] {
     background: rgba(11, 99, 206, 0.12);
   }
 
@@ -152,7 +153,7 @@
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  z-index: 20;
+  z-index: 80;
   width: min(360px, calc(100vw - 32px));
   border: 1px solid var(--cp-border);
   border-radius: 14px;
@@ -199,16 +200,30 @@
 }
 
 .notification-list {
-  max-height: 320px;
+  max-height: min(420px, calc(100vh - 170px));
   overflow-y: auto;
 
-  article {
+  .notification-item {
+    width: 100%;
     display: grid;
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 12px;
     padding: 14px 16px;
+    border: 0;
     border-bottom: 1px solid var(--cp-border);
     border-left: 4px solid transparent;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition: background 0.18s ease, border-color 0.18s ease;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--cp-surface-muted);
+      outline: 0;
+    }
 
     &:last-child {
       border-bottom: 0;
@@ -292,6 +307,21 @@
   color: var(--cp-text-muted);
   font-size: 13px;
   text-align: center;
+}
+
+.empty-state {
+  display: grid;
+  gap: 4px;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--cp-text);
+    font-size: 14px;
+  }
 }
 
 .error-state {

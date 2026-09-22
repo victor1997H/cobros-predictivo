@@ -1,15 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import { CuotaService } from '../../../../core/services/cuota.service';
@@ -62,8 +65,12 @@ interface GestionReciente {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfiguracionHome implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly cuotaService = inject(CuotaService);
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
+  private highlightTimeout?: ReturnType<typeof setTimeout>;
   private readonly currencyFormatter = new Intl.NumberFormat('es-EC', {
     style: 'currency',
     currency: 'USD',
@@ -108,6 +115,9 @@ export class ConfiguracionHome implements OnInit {
   readonly filtroActivo = signal<FiltroSeguimiento>('TODOS');
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
+  readonly highlightedCuotaId = signal<number | null>(null);
+  readonly caseRouteMessage = signal('');
+  private readonly pendingCuotaId = signal<number | null>(null);
 
   readonly ultimasGestionesPorCuota = computed(() => {
     const gestionesOrdenadas = [...this.gestiones()].sort(
@@ -172,7 +182,26 @@ export class ConfiguracionHome implements OnInit {
       })),
   );
 
+  constructor() {
+    this.destroyRef.onDestroy(() => this.clearHighlightTimer());
+  }
+
   ngOnInit(): void {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const cuotaId = Number(params.get('cuotaId'));
+
+        this.pendingCuotaId.set(
+          Number.isInteger(cuotaId) && cuotaId > 0 ? cuotaId : null,
+        );
+        this.caseRouteMessage.set('');
+
+        if (this.cuotasPendientes().length > 0) {
+          this.focusCaseFromRoute();
+        }
+      });
+
     this.loadCentroSeguimiento();
   }
 
@@ -211,11 +240,60 @@ export class ConfiguracionHome implements OnInit {
       .subscribe(({ cuotas, gestiones }) => {
         this.cuotasPendientes.set(cuotas.cuotas);
         this.gestiones.set(gestiones.gestiones);
+        this.focusCaseFromRoute();
       });
   }
 
   setFiltro(filtro: FiltroSeguimiento): void {
     this.filtroActivo.set(filtro);
+  }
+
+  private focusCaseFromRoute(): void {
+    const cuotaId = this.pendingCuotaId();
+
+    if (!cuotaId) {
+      return;
+    }
+
+    const caso = this.casos().find(
+      (casoSeguimiento) => casoSeguimiento.cuotaId === cuotaId,
+    );
+
+    if (!caso) {
+      this.highlightedCuotaId.set(null);
+      this.caseRouteMessage.set('Este caso ya no requiere atenci\u00f3n.');
+      return;
+    }
+
+    if (!this.casosFiltrados().some((casoFiltrado) => casoFiltrado.cuotaId === cuotaId)) {
+      this.filtroActivo.set(caso.nivelRiesgo);
+    }
+
+    this.caseRouteMessage.set('Caso seleccionado para revisi\u00f3n.');
+    this.highlightedCuotaId.set(cuotaId);
+
+    setTimeout(() => this.scrollToCase(cuotaId));
+    this.clearHighlightTimer();
+    this.highlightTimeout = setTimeout(() => {
+      this.highlightedCuotaId.set(null);
+    }, 3500);
+  }
+
+  private scrollToCase(cuotaId: number): void {
+    const element = this.elementRef.nativeElement.querySelector(
+      `[data-cuota-id="${cuotaId}"]`,
+    ) as HTMLElement | null;
+
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  private clearHighlightTimer(): void {
+    if (!this.highlightTimeout) {
+      return;
+    }
+
+    clearTimeout(this.highlightTimeout);
+    this.highlightTimeout = undefined;
   }
 
   private buildCasoSeguimiento(cuota: CuotaPendientePago): CasoSeguimiento {

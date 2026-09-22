@@ -75,13 +75,13 @@
               }
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Fecha de inicio</mat-label>
-              <input matInput type="date" formControlName="fechaInicio" />
-              @if (form.controls.fechaInicio.hasError('required')) {
-                <mat-error>Ingresa la fecha de inicio</mat-error>
-              }
-            </mat-form-field>
+            <app-selector-fecha
+              formControlName="fechaInicio"
+              label="Fecha de inicio"
+              [required]="true"
+              [showError]="form.controls.fechaInicio.touched && form.controls.fechaInicio.hasError('required')"
+              errorMessage="Ingresa la fecha de inicio"
+            />
 
             <mat-form-field appearance="outline">
               <mat-label>N&uacute;mero de cuotas</mat-label>
@@ -100,10 +100,10 @@
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Primer vencimiento</mat-label>
-              <input matInput type="date" formControlName="fechaPrimerVencimiento" />
-            </mat-form-field>
+            <app-selector-fecha
+              formControlName="fechaPrimerVencimiento"
+              label="Primer vencimiento"
+            />
           </div>
 
           @if (financialEditionLocked()) {

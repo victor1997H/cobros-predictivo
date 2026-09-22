@@ -6,6 +6,7 @@ import { GestionCobranzaRegistro } from '../../features/cobros/models/gestion-co
 
 export interface NotificacionSistema {
   id: number;
+  cuotaId: number;
   titulo: string;
   detalle: string;
   estado: string;
@@ -23,50 +24,25 @@ export interface NotificacionSistema {
 })
 export class NotificacionTiempoRealService implements OnDestroy {
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
-  private readonly storageKey = 'cobros_notificaciones_vistas_hasta';
-  private readonly refreshMs = 20000;
+  private readonly refreshMs = 15000;
   private pollingSubscription?: Subscription;
 
   private readonly gestiones = signal<GestionCobranzaRegistro[]>([]);
-  private readonly lastSeenAt = signal(this.loadLastSeenAt());
 
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
 
-  readonly notificaciones = computed<NotificacionSistema[]>(() =>
-    this.gestiones()
-      .slice(0, 8)
-      .map((gestion) => {
-        const alerta = gestion.alertaInterna ?? null;
-
-        return {
-          id: gestion.id,
-          titulo: alerta
-            ? alerta.tipo === 'ALERTA_CRITICA'
-              ? 'Alerta urgente'
-              : 'Alerta interna'
-            : gestion.accion,
-          detalle: alerta
-            ? `${gestion.clienteNombre} - ${alerta.accionRecomendada}`
-            : `${gestion.clienteNombre} - ${gestion.estadoEnvio}`,
-          estado: gestion.estadoEnvio,
-          riesgo: gestion.nivelRiesgo,
-          prioridad: alerta?.prioridad ?? gestion.prioridad,
-          tipoAlerta: alerta?.tipo ?? null,
-          accionRecomendada: alerta?.accionRecomendada ?? null,
-          requiereIntervencionHumana: alerta?.requiereIntervencionHumana ?? false,
-          esAlertaInterna: alerta !== null,
-          fecha: gestion.createdAt,
-        };
-      }),
+  readonly gestionesActivas = computed(() =>
+    this.deduplicateActiveGestiones(this.gestiones()),
   );
 
-  readonly unreadCount = computed(() => {
-    const vistoHasta = this.lastSeenAt();
+  readonly notificaciones = computed<NotificacionSistema[]>(() =>
+    this.gestionesActivas().slice(0, 8).map((gestion) =>
+      this.buildNotification(gestion),
+    ),
+  );
 
-    return this.gestiones().filter((gestion) => new Date(gestion.createdAt).getTime() > vistoHasta)
-      .length;
-  });
+  readonly activeAlertCount = computed(() => this.gestionesActivas().length);
 
   start(): void {
     if (this.pollingSubscription) {
@@ -102,20 +78,122 @@ export class NotificacionTiempoRealService implements OnDestroy {
       });
   }
 
-  markAsRead(): void {
-    const now = Date.now();
-
-    this.lastSeenAt.set(now);
-    localStorage.setItem(this.storageKey, String(now));
-  }
-
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
   }
 
-  private loadLastSeenAt(): number {
-    const value = Number(localStorage.getItem(this.storageKey));
+  private deduplicateActiveGestiones(
+    gestiones: GestionCobranzaRegistro[],
+  ): GestionCobranzaRegistro[] {
+    const porCuota = new Map<number, GestionCobranzaRegistro>();
 
-    return Number.isFinite(value) ? value : 0;
+    for (const gestion of gestiones) {
+      if (!this.isActiveAlert(gestion) || porCuota.has(gestion.cuotaId)) {
+        continue;
+      }
+
+      porCuota.set(gestion.cuotaId, gestion);
+    }
+
+    return [...porCuota.values()];
+  }
+
+  private isActiveAlert(gestion: GestionCobranzaRegistro): boolean {
+    if (gestion.alertaInterna) {
+      return true;
+    }
+
+    if (
+      gestion.estadoEnvio === 'ERROR' ||
+      gestion.estadoEnvio === 'PARCIAL' ||
+      gestion.estadoEnvio === 'NO_CONFIGURADO'
+    ) {
+      return true;
+    }
+
+    if (gestion.nivelRiesgo === 'ALTO' || gestion.nivelRiesgo === 'CRITICO') {
+      return true;
+    }
+
+    return ['VENCIDA', 'VENCE_HOY', 'VENCE_MANANA'].includes(
+      gestion.tipoGestion,
+    );
+  }
+
+  private buildNotification(
+    gestion: GestionCobranzaRegistro,
+  ): NotificacionSistema {
+    const alerta = gestion.alertaInterna ?? null;
+
+    return {
+      id: gestion.id,
+      cuotaId: gestion.cuotaId,
+      titulo: this.resolveTitle(gestion),
+      detalle: this.resolveDetail(gestion),
+      estado: gestion.estadoEnvio,
+      riesgo: gestion.nivelRiesgo,
+      prioridad: alerta?.prioridad ?? gestion.prioridad,
+      tipoAlerta: alerta?.tipo ?? null,
+      accionRecomendada: alerta?.accionRecomendada ?? null,
+      requiereIntervencionHumana: alerta?.requiereIntervencionHumana ?? false,
+      esAlertaInterna: alerta !== null,
+      fecha: gestion.createdAt,
+    };
+  }
+
+  private resolveTitle(gestion: GestionCobranzaRegistro): string {
+    if (gestion.alertaInterna?.tipo === 'ALERTA_CRITICA') {
+      return 'Alerta urgente';
+    }
+
+    if (gestion.alertaInterna?.tipo === 'ALERTA_ALTO') {
+      return 'Seguimiento prioritario';
+    }
+
+    if (
+      gestion.estadoEnvio === 'ERROR' ||
+      gestion.estadoEnvio === 'PARCIAL' ||
+      gestion.estadoEnvio === 'NO_CONFIGURADO'
+    ) {
+      return 'Gestion pendiente';
+    }
+
+    if (gestion.tipoGestion === 'VENCE_HOY') {
+      return 'Vence hoy';
+    }
+
+    if (gestion.tipoGestion === 'VENCE_MANANA') {
+      return 'Vence manana';
+    }
+
+    if (gestion.tipoGestion === 'VENCIDA') {
+      return 'Cuota vencida';
+    }
+
+    return gestion.accion;
+  }
+
+  private resolveDetail(gestion: GestionCobranzaRegistro): string {
+    const dias =
+      gestion.diasAtraso > 0
+        ? `${gestion.diasAtraso} dias de mora`
+        : 'Sin mora';
+    const canal = this.formatCanales(gestion.canalesSolicitados);
+
+    if (gestion.alertaInterna?.accionRecomendada) {
+      return `${gestion.clienteNombre} - ${dias} - ${gestion.alertaInterna.accionRecomendada}`;
+    }
+
+    return `${gestion.clienteNombre} - ${dias} - ${canal}`;
+  }
+
+  private formatCanales(canales: GestionCobranzaRegistro['canalesSolicitados']): string {
+    if (!canales.length) {
+      return 'Sin aviso registrado';
+    }
+
+    return [...new Set(canales)]
+      .map((canal) => (canal === 'CORREO' ? 'Correo' : 'WhatsApp'))
+      .join(' + ');
   }
 }

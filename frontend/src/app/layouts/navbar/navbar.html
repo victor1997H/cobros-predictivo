@@ -11,7 +11,9 @@
           class="notification-button"
           type="button"
           aria-label="Notificaciones"
-          [class.has-unread]="unreadCount() > 0"
+          aria-haspopup="dialog"
+          [attr.aria-expanded]="isNotificationsOpen()"
+          [class.has-alerts]="activeAlertCount() > 0"
           (click)="toggleNotifications()"
         >
           <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -19,34 +21,40 @@
             <path d="M10 19h4" />
           </svg>
 
-          @if (unreadCount() > 0) {
-            <span class="notification-count">{{ unreadCount() }}</span>
+          @if (activeAlertCount() > 0) {
+            <span class="notification-count">{{ activeAlertCount() }}</span>
           }
         </button>
 
         @if (isNotificationsOpen()) {
-          <section class="notifications-panel" aria-label="Notificaciones del sistema">
+          <section class="notifications-panel" aria-label="Alertas activas">
             <header>
               <div>
-                <strong>Notificaciones</strong>
-                <span>Gestiones registradas por n8n</span>
+                <strong>Alertas activas</strong>
+                <span>Casos que requieren atenci&oacute;n</span>
               </div>
 
               <button type="button" (click)="refreshNotifications()">Actualizar</button>
             </header>
 
             @if (notificationsLoading()) {
-              <p class="empty-state">Actualizando notificaciones...</p>
+              <p class="empty-state">Actualizando alertas...</p>
             } @else if (notificationsError()) {
               <p class="error-state">{{ notificationsError() }}</p>
             } @else if (notificaciones().length === 0) {
-              <p class="empty-state">Aun no hay gestiones registradas.</p>
+              <div class="empty-state">
+                <strong>Todo al d&iacute;a</strong>
+                <span>No tienes casos pendientes de atenci&oacute;n.</span>
+              </div>
             } @else {
               <div class="notification-list">
                 @for (notificacion of notificaciones(); track notificacion.id) {
-                  <article
+                  <button
+                    type="button"
+                    class="notification-item"
                     [class.alert-high]="notificacion.tipoAlerta === 'ALERTA_ALTO'"
                     [class.alert-critical]="notificacion.tipoAlerta === 'ALERTA_CRITICA'"
+                    (click)="openNotificationCase(notificacion)"
                   >
                     <span
                       class="risk-dot"
@@ -69,7 +77,7 @@
                       }
                       <small>{{ notificacion.fecha | date: 'dd/MM/yyyy HH:mm' }}</small>
                     </div>
-                  </article>
+                  </button>
                 }
               </div>
             }

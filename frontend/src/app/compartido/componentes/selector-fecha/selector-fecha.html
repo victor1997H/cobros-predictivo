@@ -1,0 +1,78 @@
+<div
+  class="date-picker"
+  [class.open]="isOpen()"
+  [class.disabled]="isDisabled()"
+  [class.invalid]="showError"
+>
+  <label>
+    {{ label }}
+    @if (required) {
+      <span aria-hidden="true">*</span>
+    }
+  </label>
+
+  <button
+    class="date-input"
+    type="button"
+    [disabled]="isDisabled()"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-label]="label + ': abrir calendario'"
+    (click)="toggleCalendar()"
+  >
+    <span [class.placeholder]="!displayValue">
+      {{ displayValue || placeholder }}
+    </span>
+    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <path d="M7 3v3M17 3v3M4.5 9.5h15M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+    </svg>
+  </button>
+
+  @if (showError) {
+    <p class="date-error">{{ errorMessage }}</p>
+  }
+
+  @if (isOpen()) {
+    <section class="calendar-popover" aria-label="Calendario">
+      <header>
+        <button type="button" aria-label="Año anterior" (click)="moveYear(-1)">
+          &laquo;
+        </button>
+        <button type="button" aria-label="Mes anterior" (click)="moveMonth(-1)">
+          &lsaquo;
+        </button>
+        <strong>{{ currentMonthLabel }}</strong>
+        <button type="button" aria-label="Mes siguiente" (click)="moveMonth(1)">
+          &rsaquo;
+        </button>
+        <button type="button" aria-label="Año siguiente" (click)="moveYear(1)">
+          &raquo;
+        </button>
+      </header>
+
+      <div class="weekdays" aria-hidden="true">
+        <span>Lun</span>
+        <span>Mar</span>
+        <span>Mi&eacute;</span>
+        <span>Jue</span>
+        <span>Vie</span>
+        <span>S&aacute;b</span>
+        <span>Dom</span>
+      </div>
+
+      <div class="days-grid">
+        @for (day of calendarDays; track day.value) {
+          <button
+            type="button"
+            [class.outside]="!day.isCurrentMonth"
+            [class.today]="day.isToday"
+            [class.selected]="day.isSelected"
+            [attr.aria-label]="'Seleccionar ' + day.value"
+            (click)="selectDate(day.value)"
+          >
+            {{ day.label }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+</div>

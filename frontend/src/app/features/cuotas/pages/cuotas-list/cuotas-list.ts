@@ -17,6 +17,7 @@ import { finalize, forkJoin } from 'rxjs';
 
 import { CuotaService } from '../../../../core/services/cuota.service';
 import { PrestamoService } from '../../../../core/services/prestamo.service';
+import { SelectorFechaComponent } from '../../../../compartido/componentes/selector-fecha/selector-fecha';
 import { Prestamo } from '../../../prestamos/models/prestamo.model';
 import { Cuota, CuotaEstado, CuotaPayload } from '../../models/cuota.model';
 
@@ -33,6 +34,7 @@ type FiltroCuota = 'TODAS' | CuotaEstado;
     MatInputModule,
     MatSelectModule,
     MatTableModule,
+    SelectorFechaComponent,
   ],
   templateUrl: './cuotas-list.html',
   styleUrl: './cuotas-list.scss',

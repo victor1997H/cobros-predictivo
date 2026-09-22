@@ -18,6 +18,7 @@ import { finalize, forkJoin } from 'rxjs';
 
 import { ClienteService } from '../../../../core/services/cliente.service';
 import { PrestamoService } from '../../../../core/services/prestamo.service';
+import { SelectorFechaComponent } from '../../../../compartido/componentes/selector-fecha/selector-fecha';
 import { Cliente } from '../../../clientes/models/cliente.model';
 import { Prestamo, PrestamoPayload } from '../../models/prestamo.model';
 
@@ -33,6 +34,7 @@ import { Prestamo, PrestamoPayload } from '../../models/prestamo.model';
     MatInputModule,
     MatSelectModule,
     MatTableModule,
+    SelectorFechaComponent,
   ],
   templateUrl: './prestamos-list.html',
   styleUrl: './prestamos-list.scss',

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, of } from 'rxjs';
+import { of } from 'rxjs';
 
 import {
   GestionCobranzaRegistro,
@@ -10,8 +10,9 @@ import { NotificacionTiempoRealService } from './notificacion-tiempo-real.servic
 
 describe('NotificacionTiempoRealService', () => {
   let service: NotificacionTiempoRealService;
+  let findAllSpy: ReturnType<typeof vi.fn>;
   let gestionCobranzaService: {
-    findAll: () => Observable<GestionesCobranzaResponse>;
+    findAll: ReturnType<typeof vi.fn>;
   };
   let response: GestionesCobranzaResponse;
 
@@ -44,8 +45,9 @@ describe('NotificacionTiempoRealService', () => {
       message: 'Gestiones de cobranza obtenidas correctamente',
       gestiones: [],
     };
+    findAllSpy = vi.fn(() => of(response));
     gestionCobranzaService = {
-      findAll: () => of(response),
+      findAll: findAllSpy,
     };
 
     TestBed.configureTestingModule({
@@ -66,11 +68,13 @@ describe('NotificacionTiempoRealService', () => {
     service.refresh();
 
     expect(service.notificaciones()[0]).toMatchObject({
-      titulo: 'Aviso preventivo',
+      titulo: 'Vence manana',
+      cuotaId: 25,
       esAlertaInterna: false,
       tipoAlerta: null,
       requiereIntervencionHumana: false,
     });
+    expect(service.activeAlertCount()).toBe(1);
   });
 
   it('marca riesgo ALTO como alerta interna de seguimiento prioritario', () => {
@@ -94,7 +98,8 @@ describe('NotificacionTiempoRealService', () => {
     service.refresh();
 
     expect(service.notificaciones()[0]).toMatchObject({
-      titulo: 'Alerta interna',
+      titulo: 'Seguimiento prioritario',
+      cuotaId: 25,
       prioridad: 'ALTA',
       tipoAlerta: 'ALERTA_ALTO',
       accionRecomendada: 'Seguimiento prioritario',
@@ -125,11 +130,62 @@ describe('NotificacionTiempoRealService', () => {
 
     expect(service.notificaciones()[0]).toMatchObject({
       titulo: 'Alerta urgente',
+      cuotaId: 25,
       prioridad: 'MAXIMA',
       tipoAlerta: 'ALERTA_CRITICA',
       accionRecomendada: 'Contacto inmediato y revision manual',
       esAlertaInterna: true,
       requiereIntervencionHumana: true,
     });
+  });
+
+  it('evita duplicar notificaciones de la misma cuota y conserva la mas reciente', () => {
+    response.gestiones = [
+      {
+        ...baseGestion,
+        id: 10,
+        createdAt: '2026-02-10T11:00:00.000Z',
+        accion: 'Cuota vencida',
+        tipoGestion: 'VENCIDA',
+      },
+      {
+        ...baseGestion,
+        id: 9,
+        createdAt: '2026-02-10T10:00:00.000Z',
+      },
+    ];
+
+    service.refresh();
+
+    expect(service.activeAlertCount()).toBe(1);
+    expect(service.notificaciones()[0].id).toBe(10);
+  });
+
+  it('muestra una gestion con error como pendiente de atencion', () => {
+    response.gestiones = [
+      {
+        ...baseGestion,
+        id: 11,
+        tipoGestion: 'VIGENTE',
+        estadoEnvio: 'ERROR',
+        canalesSolicitados: ['WHATSAPP'],
+      },
+    ];
+
+    service.refresh();
+
+    expect(service.notificaciones()[0]).toMatchObject({
+      titulo: 'Gestion pendiente',
+      detalle: 'Cliente Prueba - Sin mora - WhatsApp',
+    });
+  });
+
+  it('no genera varios timers si start se llama mas de una vez', () => {
+    service.start();
+    service.start();
+
+    expect(findAllSpy).toHaveBeenCalledTimes(1);
+
+    service.ngOnDestroy();
   });
 });

@@ -68,13 +68,13 @@
               }
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Fecha de vencimiento</mat-label>
-              <input matInput type="date" formControlName="fechaVencimiento" />
-              @if (form.controls.fechaVencimiento.hasError('required')) {
-                <mat-error>Ingresa la fecha de vencimiento</mat-error>
-              }
-            </mat-form-field>
+            <app-selector-fecha
+              formControlName="fechaVencimiento"
+              label="Fecha de vencimiento"
+              [required]="true"
+              [showError]="form.controls.fechaVencimiento.touched && form.controls.fechaVencimiento.hasError('required')"
+              errorMessage="Ingresa la fecha de vencimiento"
+            />
 
             <mat-form-field appearance="outline">
               <mat-label>Monto</mat-label>

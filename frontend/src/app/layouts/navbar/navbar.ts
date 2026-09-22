@@ -1,11 +1,22 @@
 import { AsyncPipe, DatePipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, finalize, timeout, TimeoutError } from 'rxjs';
 
 import { AuthService, AuthUser } from '../../core/services/auth.service';
-import { NotificacionTiempoRealService } from '../../core/services/notificacion-tiempo-real.service';
+import {
+  NotificacionSistema,
+  NotificacionTiempoRealService,
+} from '../../core/services/notificacion-tiempo-real.service';
 import { ThemeService } from '../../core/services/theme.service';
 
 interface PageHeader {
@@ -60,11 +71,12 @@ export class Navbar implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly currentUser$ = this.authService.currentUser$;
   readonly isDarkMode = this.themeService.isDarkMode;
   readonly notificaciones = this.notificacionService.notificaciones;
-  readonly unreadCount = this.notificacionService.unreadCount;
+  readonly activeAlertCount = this.notificacionService.activeAlertCount;
   readonly notificationsLoading = this.notificacionService.isLoading;
   readonly notificationsError = this.notificacionService.errorMessage;
   readonly pageHeader = signal(this.resolvePageHeader(this.router.url));
@@ -145,7 +157,7 @@ export class Navbar implements OnInit {
       const nextState = !isOpen;
 
       if (nextState) {
-        this.notificacionService.markAsRead();
+        this.notificacionService.refresh();
       }
 
       return nextState;
@@ -153,8 +165,36 @@ export class Navbar implements OnInit {
     this.isUserMenuOpen.set(false);
   }
 
+  closeNotifications(): void {
+    this.isNotificationsOpen.set(false);
+  }
+
   refreshNotifications(): void {
     this.notificacionService.refresh();
+  }
+
+  openNotificationCase(notificacion: NotificacionSistema): void {
+    this.closeNotifications();
+
+    void this.router.navigate(['/configuracion'], {
+      queryParams: { cuotaId: notificacion.cuotaId },
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.elementRef.nativeElement.contains(event.target as Node)) {
+      return;
+    }
+
+    this.closeNotifications();
+    this.closeUserMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeNotifications();
+    this.closeUserMenu();
   }
 
   showAccountSection(section: 'menu' | 'profile' | 'password'): void {
