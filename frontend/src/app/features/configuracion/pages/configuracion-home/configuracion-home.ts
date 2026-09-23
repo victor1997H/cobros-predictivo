@@ -17,24 +17,39 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import { CuotaService } from '../../../../core/services/cuota.service';
 import { GestionCobranzaService } from '../../../../core/services/gestion-cobranza.service';
+import { PagoService } from '../../../../core/services/pago.service';
 import {
   CanalNotificacion,
   GestionCobranzaRegistro,
   GestionesCobranzaResponse,
+  ResultadoNotificacion,
 } from '../../../cobros/models/gestion-cobranza.model';
 import {
   CuotaPendientePago,
   CuotasPendientesPagoResponse,
 } from '../../../cuotas/models/cuota.model';
+import { PagoDetalle, PagosResponse } from '../../../pagos/models/pago.model';
 
 type NivelSeguimiento = 'BAJO' | 'MEDIO' | 'ALTO' | 'CRITICO';
 type FiltroSeguimiento = 'TODOS' | NivelSeguimiento;
+type SeccionDetalleCaso = 'resumen' | 'deuda' | 'gestiones' | 'pagos' | 'contacto';
 
 interface CasoSeguimiento {
   cuotaId: number;
+  prestamoId: number;
+  clienteId: number;
   socio: string;
+  identificacion: string;
+  email: string;
+  telefono: string;
   numeroCuota: number;
+  montoCuota: number;
+  montoCuotaTexto: string;
+  totalPagadoCuotaTexto: string;
+  estadoCuota: string;
+  saldoPendiente: number;
   saldoPendienteTexto: string;
+  saldoPendientePrestamo: number;
   saldoPrestamoTexto: string;
   fechaVencimientoTexto: string;
   diasMora: number;
@@ -46,6 +61,7 @@ interface CasoSeguimiento {
   requiereOperador: boolean;
   accionRuta: string;
   fechaVencimiento: string;
+  categoriaReferenciaTexto: string;
 }
 
 interface GestionReciente {
@@ -70,6 +86,7 @@ export class ConfiguracionHome implements OnInit {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly cuotaService = inject(CuotaService);
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
+  private readonly pagoService = inject(PagoService);
   private highlightTimeout?: ReturnType<typeof setTimeout>;
   private readonly currencyFormatter = new Intl.NumberFormat('es-EC', {
     style: 'currency',
@@ -110,13 +127,26 @@ export class ConfiguracionHome implements OnInit {
     { label: 'Medio', value: 'MEDIO' },
     { label: 'Bajo', value: 'BAJO' },
   ];
+  readonly detalleSecciones: ReadonlyArray<{
+    label: string;
+    value: SeccionDetalleCaso;
+  }> = [
+    { label: 'Resumen', value: 'resumen' },
+    { label: 'Deuda', value: 'deuda' },
+    { label: 'Gestiones', value: 'gestiones' },
+    { label: 'Pagos', value: 'pagos' },
+    { label: 'Contacto', value: 'contacto' },
+  ];
   readonly cuotasPendientes = signal<CuotaPendientePago[]>([]);
   readonly gestiones = signal<GestionCobranzaRegistro[]>([]);
+  readonly pagos = signal<PagoDetalle[]>([]);
   readonly filtroActivo = signal<FiltroSeguimiento>('TODOS');
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
   readonly highlightedCuotaId = signal<number | null>(null);
   readonly caseRouteMessage = signal('');
+  readonly detalleCaso = signal<CasoSeguimiento | null>(null);
+  readonly detalleSeccionActiva = signal<SeccionDetalleCaso>('resumen');
   private readonly pendingCuotaId = signal<number | null>(null);
 
   readonly ultimasGestionesPorCuota = computed(() => {
@@ -181,6 +211,45 @@ export class ConfiguracionHome implements OnInit {
         fechaTexto: this.formatDateTime(gestion.createdAt),
       })),
   );
+  readonly gestionesDetalleCaso = computed(() => {
+    const caso = this.detalleCaso();
+
+    if (!caso) {
+      return [];
+    }
+
+    return this.gestiones()
+      .filter((gestion) => gestion.cuotaId === caso.cuotaId)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  });
+  readonly pagosDetalleCaso = computed(() => {
+    const caso = this.detalleCaso();
+
+    if (!caso) {
+      return [];
+    }
+
+    return this.pagos()
+      .filter(
+        (pago) =>
+          pago.cuota.id === caso.cuotaId ||
+          pago.prestamo.id === caso.prestamoId,
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.pago.fechaPago).getTime() -
+          new Date(a.pago.fechaPago).getTime(),
+      );
+  });
+  readonly ultimaGestionDetalleCaso = computed(
+    () => this.gestionesDetalleCaso()[0] ?? null,
+  );
+  readonly prestamoDetalleCaso = computed(
+    () => this.pagosDetalleCaso()[0]?.prestamo ?? null,
+  );
 
   constructor() {
     this.destroyRef.onDestroy(() => this.clearHighlightTimer());
@@ -235,17 +304,105 @@ export class ConfiguracionHome implements OnInit {
           } satisfies GestionesCobranzaResponse),
         ),
       ),
+      pagos: this.pagoService.findAll().pipe(
+        catchError(() =>
+          of({
+            success: false,
+            message: '',
+            pagos: [],
+          } satisfies PagosResponse),
+        ),
+      ),
     })
       .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe(({ cuotas, gestiones }) => {
+      .subscribe(({ cuotas, gestiones, pagos }) => {
         this.cuotasPendientes.set(cuotas.cuotas);
         this.gestiones.set(gestiones.gestiones);
+        this.pagos.set(pagos.pagos);
         this.focusCaseFromRoute();
       });
   }
 
   setFiltro(filtro: FiltroSeguimiento): void {
     this.filtroActivo.set(filtro);
+  }
+
+  abrirDetalleCaso(caso: CasoSeguimiento): void {
+    this.detalleCaso.set(caso);
+    this.detalleSeccionActiva.set('resumen');
+  }
+
+  cerrarDetalleCaso(): void {
+    this.detalleCaso.set(null);
+    this.detalleSeccionActiva.set('resumen');
+  }
+
+  setDetalleSeccion(seccion: SeccionDetalleCaso): void {
+    this.detalleSeccionActiva.set(seccion);
+  }
+
+  estadoCaso(caso: CasoSeguimiento): string {
+    if (caso.requiereOperador) {
+      return 'Requiere atenci\u00f3n';
+    }
+
+    return caso.diasMora > 0 ? 'Cuota vencida' : 'Seguimiento preventivo';
+  }
+
+  motivoClasificacion(caso: CasoSeguimiento): string {
+    const ultimaGestion = this.ultimaGestionDetalleCaso();
+
+    if (ultimaGestion?.categoriaReferencia) {
+      return `${this.formatCategoriaReferencia(
+        ultimaGestion.categoriaReferencia,
+      )} registrada con ${this.formatDiasMora(
+        ultimaGestion.diasAtraso,
+      )}. Nivel actual: ${this.formatRiesgo(
+        ultimaGestion.nivelRiesgo as NivelSeguimiento,
+      )}.`;
+    }
+
+    if (caso.diasMora > 0) {
+      return `Cuota vencida con ${caso.diasMoraTexto} y saldo pendiente de ${caso.saldoPendienteTexto}.`;
+    }
+
+    return `Cuota pendiente con saldo de ${caso.saldoPendienteTexto} y vencimiento ${caso.fechaVencimientoTexto}.`;
+  }
+
+  resultadosGestion(gestion: GestionCobranzaRegistro): ResultadoNotificacion[] {
+    return gestion.resultadoEnvio ?? [];
+  }
+
+  estadoEnvioTexto(gestion: GestionCobranzaRegistro): string {
+    const estados: Record<string, string> = {
+      ENVIADO: 'Enviado',
+      PARCIAL: 'Parcial',
+      ERROR: 'Con error',
+      NO_CONFIGURADO: 'No configurado',
+    };
+
+    return estados[gestion.estadoEnvio] ?? gestion.estadoEnvio;
+  }
+
+  metodoPagoTexto(metodo: string): string {
+    const metodos: Record<string, string> = {
+      EFECTIVO: 'Efectivo',
+      TRANSFERENCIA: 'Transferencia',
+      DEPOSITO: 'Dep\u00f3sito',
+      TARJETA: 'Tarjeta',
+    };
+
+    return metodos[metodo] ?? metodo;
+  }
+
+  riesgoClass(nivelRiesgo: NivelSeguimiento): string {
+    return nivelRiesgo.toLowerCase();
+  }
+
+  cuotasVencidasPrestamo(caso: CasoSeguimiento): number {
+    return this.casos().filter(
+      (item) => item.prestamoId === caso.prestamoId && item.diasMora > 0,
+    ).length;
   }
 
   private focusCaseFromRoute(): void {
@@ -303,9 +460,20 @@ export class ConfiguracionHome implements OnInit {
 
     return {
       cuotaId: cuota.cuotaId,
+      prestamoId: cuota.prestamoId,
+      clienteId: cuota.cliente.id,
       socio: `${cuota.cliente.nombres} ${cuota.cliente.apellidos}`.trim(),
+      identificacion: cuota.cliente.identificacion,
+      email: cuota.cliente.email,
+      telefono: cuota.cliente.telefono,
       numeroCuota: cuota.numeroCuota,
+      montoCuota: cuota.montoCuota,
+      montoCuotaTexto: this.formatMoney(cuota.montoCuota),
+      totalPagadoCuotaTexto: this.formatMoney(cuota.totalPagadoCuota),
+      estadoCuota: cuota.estado,
+      saldoPendiente: cuota.saldoPendiente,
       saldoPendienteTexto: this.formatMoney(cuota.saldoPendiente),
+      saldoPendientePrestamo: cuota.saldoPendientePrestamo,
       saldoPrestamoTexto: this.formatMoney(cuota.saldoPendientePrestamo),
       fechaVencimientoTexto: this.formatDate(cuota.fechaVencimiento),
       diasMora,
@@ -322,8 +490,11 @@ export class ConfiguracionHome implements OnInit {
         ultimaGestion?.alertaInterna?.requiereIntervencionHumana ||
           ultimaGestion?.alertaInterna,
       ),
-      accionRuta: diasMora > 0 ? '/cobros' : '/pagos',
+      accionRuta: '/cobros',
       fechaVencimiento: cuota.fechaVencimiento,
+      categoriaReferenciaTexto: ultimaGestion?.categoriaReferencia
+        ? this.formatCategoriaReferencia(ultimaGestion.categoriaReferencia)
+        : 'Sin categor\u00eda registrada',
     };
   }
 
@@ -385,7 +556,7 @@ export class ConfiguracionHome implements OnInit {
     return diasMora === 1 ? '1 d\u00eda' : `${diasMora} d\u00edas`;
   }
 
-  private formatCanales(canales: CanalNotificacion[] | null): string {
+  formatCanales(canales: CanalNotificacion[] | null): string {
     if (!canales?.length) {
       return 'Sin aviso registrado';
     }
@@ -397,16 +568,22 @@ export class ConfiguracionHome implements OnInit {
       .join(' + ');
   }
 
-  private formatMoney(value: number): string {
-    return this.currencyFormatter.format(value);
-  }
-
-  private formatDate(value: string): string {
+  formatDate(value: string): string {
     return this.dateFormatter.format(this.toLocalDate(value));
   }
 
-  private formatDateTime(value: string): string {
+  formatDateTime(value: string): string {
     return this.dateTimeFormatter.format(new Date(value));
+  }
+
+  private formatCategoriaReferencia(categoria: string): string {
+    return categoria === 'PREVENTIVO'
+      ? 'Preventivo'
+      : `Categor\u00eda ${categoria}`;
+  }
+
+  formatMoney(value: number): string {
+    return this.currencyFormatter.format(value);
   }
 
   private toLocalDate(value: string): Date {

@@ -161,6 +161,36 @@ describe('NotificacionTiempoRealService', () => {
     expect(service.notificaciones()[0].id).toBe(10);
   });
 
+  it('marca solo una notificacion como leida y conserva el estado despues de refrescar', () => {
+    response.gestiones = [
+      baseGestion,
+      {
+        ...baseGestion,
+        id: 2,
+        cuotaId: 26,
+        claveGestion: '2026-02-10:26:seguimiento',
+        nivelRiesgo: 'ALTO',
+        prioridad: 'ALTA',
+        createdAt: '2026-02-10T11:00:00.000Z',
+      },
+    ];
+
+    service.refresh();
+
+    expect(service.activeAlertCount()).toBe(2);
+
+    service.markAsRead(2);
+
+    expect(service.activeAlertCount()).toBe(1);
+    expect(service.notificaciones().find((item) => item.id === 2)?.leida).toBe(true);
+    expect(service.notificaciones().find((item) => item.id === 1)?.leida).toBe(false);
+
+    service.refresh();
+
+    expect(service.activeAlertCount()).toBe(1);
+    expect(service.notificaciones().find((item) => item.id === 2)?.leida).toBe(true);
+  });
+
   it('muestra una gestion con error como pendiente de atencion', () => {
     response.gestiones = [
       {

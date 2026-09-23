@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,67 +8,117 @@ import {
 } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
 
-import { AuthService } from '../../../../core/services/auth.service';
-import { ClienteService } from '../../../../core/services/cliente.service';
 import { CobroService } from '../../../../core/services/cobro.service';
-import { GestionCobranzaService } from '../../../../core/services/gestion-cobranza.service';
 import { PagoService } from '../../../../core/services/pago.service';
-import { Cliente } from '../../../clientes/models/cliente.model';
-import { CobroGestion } from '../../../cobros/models/cobro.model';
-import { GestionCobranzaRegistro } from '../../../cobros/models/gestion-cobranza.model';
+import {
+  ClienteGestion,
+  CobroGestion,
+  NivelRiesgo,
+} from '../../../cobros/models/cobro.model';
 import { PagoDetalle } from '../../../pagos/models/pago.model';
+
+interface CasoPrioritario {
+  id: number;
+  cliente: string;
+  situacion: string;
+  prioridad: string;
+  nivelRiesgo: NivelRiesgo;
+  diasAtraso: number;
+}
+
+interface ResumenRiesgoItem {
+  nivel: NivelRiesgo;
+  etiqueta: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
+const ORDEN_RIESGO: Record<NivelRiesgo, number> = {
+  CRITICO: 0,
+  ALTO: 1,
+  MEDIO: 2,
+  BAJO: 3,
+};
+
+const ETIQUETAS_RIESGO: Record<NivelRiesgo, string> = {
+  CRITICO: 'Critico',
+  ALTO: 'Alto',
+  MEDIO: 'Medio',
+  BAJO: 'Bajo',
+};
 
 @Component({
   selector: 'app-dashboard-home',
-  imports: [AsyncPipe],
+  imports: [],
   templateUrl: './dashboard-home.html',
   styleUrl: './dashboard-home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHome implements OnInit {
-  private readonly authService = inject(AuthService);
-  private readonly clienteService = inject(ClienteService);
   private readonly cobroService = inject(CobroService);
-  private readonly gestionCobranzaService = inject(GestionCobranzaService);
   private readonly pagoService = inject(PagoService);
 
-  readonly currentUser$ = this.authService.currentUser$;
-  readonly clientes = signal<Cliente[]>([]);
   readonly cuotasGestion = signal<CobroGestion[]>([]);
-  readonly gestiones = signal<GestionCobranzaRegistro[]>([]);
   readonly pagos = signal<PagoDetalle[]>([]);
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
 
-  readonly totalClientes = computed(() => this.clientes().length);
-  readonly clientesActivos = computed(
-    () => this.clientes().filter((cliente) => cliente.estado).length,
-  );
-  readonly clientesInactivos = computed(
-    () => this.clientes().filter((cliente) => !cliente.estado).length,
-  );
-  readonly ultimosClientes = computed(() => this.clientes().slice(0, 5));
   readonly cuotasVencidas = computed(
     () => this.cuotasGestion().filter((item) => item.tipoGestion === 'VENCIDA').length,
   );
+
   readonly saldoEnGestion = computed(() =>
     this.cuotasGestion().reduce((total, item) => total + item.cuota.saldoPendiente, 0),
   );
+
   readonly riesgoCritico = computed(
     () => this.cuotasGestion().filter((item) => item.nivelRiesgo === 'CRITICO').length,
   );
-  readonly alertasOperador = computed(
-    () => this.gestiones().filter((gestion) => gestion.alertaInterna).length,
-  );
-  readonly intervencionesHumanas = computed(
-    () =>
-      this.gestiones().filter((gestion) => gestion.alertaInterna?.requiereIntervencionHumana)
-        .length,
-  );
+
   readonly totalRecaudado = computed(() =>
     this.pagos().reduce((total, item) => total + item.pago.monto, 0),
   );
-  readonly ultimasGestiones = computed(() => this.gestiones().slice(0, 5));
+
+  readonly casosPrioritarios = computed<CasoPrioritario[]>(() =>
+    [...this.cuotasGestion()]
+      .filter((item) => item.cuota.saldoPendiente > 0)
+      .map((item) => ({
+        id: item.cuota.id,
+        cliente: this.fullName(item.cliente),
+        situacion: this.resolveSituacion(item),
+        prioridad: ETIQUETAS_RIESGO[item.nivelRiesgo],
+        nivelRiesgo: item.nivelRiesgo,
+        diasAtraso: item.diasAtraso,
+      }))
+      .sort((a, b) => {
+        const riesgo = ORDEN_RIESGO[a.nivelRiesgo] - ORDEN_RIESGO[b.nivelRiesgo];
+
+        if (riesgo !== 0) {
+          return riesgo;
+        }
+
+        return b.diasAtraso - a.diasAtraso;
+      }),
+  );
+
+  readonly resumenRiesgo = computed<ResumenRiesgoItem[]>(() => {
+    const conteoPorCliente = this.resolveConteoRiesgoPorCliente();
+    const total = Object.values(conteoPorCliente).reduce(
+      (acumulado, cantidad) => acumulado + cantidad,
+      0,
+    );
+
+    return (['CRITICO', 'ALTO', 'MEDIO', 'BAJO'] as NivelRiesgo[]).map((nivel) => ({
+      nivel,
+      etiqueta: ETIQUETAS_RIESGO[nivel],
+      cantidad: conteoPorCliente[nivel],
+      porcentaje: total > 0 ? Math.round((conteoPorCliente[nivel] / total) * 100) : 0,
+    }));
+  });
+
+  readonly totalClientesClasificados = computed(() =>
+    this.resumenRiesgo().reduce((total, item) => total + item.cantidad, 0),
+  );
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -80,27 +129,19 @@ export class DashboardHome implements OnInit {
     this.errorMessage.set('');
 
     forkJoin({
-      clientes: this.clienteService.findAll(),
       gestion: this.cobroService.findGestionCobranza(),
-      gestiones: this.gestionCobranzaService.findAll(),
       pagos: this.pagoService.findAll(),
     })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: ({ clientes, gestion, gestiones, pagos }) => {
-          this.clientes.set(clientes.clientes);
+        next: ({ gestion, pagos }) => {
           this.cuotasGestion.set(gestion.cuotas);
-          this.gestiones.set(gestiones.gestiones);
           this.pagos.set(pagos.pagos);
         },
         error: (error: unknown) => {
           this.errorMessage.set(this.resolveErrorMessage(error));
         },
       });
-  }
-
-  fullName(cliente: Cliente): string {
-    return `${cliente.nombres} ${cliente.apellidos}`;
   }
 
   formatCurrency(value: number): string {
@@ -110,24 +151,52 @@ export class DashboardHome implements OnInit {
     }).format(value);
   }
 
-  alertaOperadorLabel(gestion: GestionCobranzaRegistro): string {
-    if (!gestion.alertaInterna) {
-      return '';
-    }
-
-    return gestion.alertaInterna.requiereIntervencionHumana
-      ? 'Atencion inmediata'
-      : 'Seguimiento prioritario';
+  riskClass(nivel: NivelRiesgo): string {
+    return `risk-${nivel.toLowerCase()}`;
   }
 
-  categoriaReferenciaLabel(gestion: GestionCobranzaRegistro): string {
-    if (!gestion.categoriaReferencia) {
-      return 'Sin categoria';
+  private resolveConteoRiesgoPorCliente(): Record<NivelRiesgo, number> {
+    const riesgoPorCliente = new Map<number, NivelRiesgo>();
+
+    for (const item of this.cuotasGestion()) {
+      const riesgoActual = riesgoPorCliente.get(item.cliente.id);
+
+      if (!riesgoActual || ORDEN_RIESGO[item.nivelRiesgo] < ORDEN_RIESGO[riesgoActual]) {
+        riesgoPorCliente.set(item.cliente.id, item.nivelRiesgo);
+      }
     }
 
-    return gestion.categoriaReferencia === 'PREVENTIVO'
-      ? 'Preventivo'
-      : `Categoria ${gestion.categoriaReferencia}`;
+    const conteo: Record<NivelRiesgo, number> = {
+      CRITICO: 0,
+      ALTO: 0,
+      MEDIO: 0,
+      BAJO: 0,
+    };
+
+    for (const nivel of riesgoPorCliente.values()) {
+      conteo[nivel] += 1;
+    }
+
+    return conteo;
+  }
+
+  private fullName(cliente: ClienteGestion): string {
+    return `${cliente.nombres} ${cliente.apellidos}`.trim();
+  }
+
+  private resolveSituacion(item: CobroGestion): string {
+    const saldo = this.formatCurrency(item.cuota.saldoPendiente);
+    const cuota = `Cuota ${item.cuota.numeroCuota}`;
+
+    if (item.tipoGestion === 'VENCE_MANANA') {
+      return `${cuota} vence pronto - saldo pendiente ${saldo}`;
+    }
+
+    if (item.diasAtraso > 0) {
+      return `${cuota} vencida - ${item.diasAtraso} dias de mora - saldo pendiente ${saldo}`;
+    }
+
+    return `${cuota} pendiente - saldo pendiente ${saldo}`;
   }
 
   private resolveErrorMessage(error: unknown): string {
@@ -159,6 +228,6 @@ export class DashboardHome implements OnInit {
       }
     }
 
-    return 'No se pudo cargar la informaci\u00f3n del dashboard.';
+    return 'No se pudo cargar la informacion del dashboard.';
   }
 }

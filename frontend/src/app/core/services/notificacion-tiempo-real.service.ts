@@ -7,6 +7,7 @@ import { GestionCobranzaRegistro } from '../../features/cobros/models/gestion-co
 export interface NotificacionSistema {
   id: number;
   cuotaId: number;
+  leida: boolean;
   titulo: string;
   detalle: string;
   estado: string;
@@ -25,9 +26,13 @@ export interface NotificacionSistema {
 export class NotificacionTiempoRealService implements OnDestroy {
   private readonly gestionCobranzaService = inject(GestionCobranzaService);
   private readonly refreshMs = 15000;
+  private readonly readStorageKey = 'cobros_notificaciones_leidas';
   private pollingSubscription?: Subscription;
 
   private readonly gestiones = signal<GestionCobranzaRegistro[]>([]);
+  private readonly readNotificationIds = signal<Set<number>>(
+    this.loadReadNotificationIds(),
+  );
 
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
@@ -42,7 +47,15 @@ export class NotificacionTiempoRealService implements OnDestroy {
     ),
   );
 
-  readonly activeAlertCount = computed(() => this.gestionesActivas().length);
+  readonly unreadAlertCount = computed(() => {
+    const readNotificationIds = this.readNotificationIds();
+
+    return this.gestionesActivas().filter(
+      (gestion) => !readNotificationIds.has(gestion.id),
+    ).length;
+  });
+
+  readonly activeAlertCount = this.unreadAlertCount;
 
   start(): void {
     if (this.pollingSubscription) {
@@ -80,6 +93,18 @@ export class NotificacionTiempoRealService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
+  }
+
+  markAsRead(notificationId: number): void {
+    if (this.readNotificationIds().has(notificationId)) {
+      return;
+    }
+
+    const nextIds = new Set(this.readNotificationIds());
+
+    nextIds.add(notificationId);
+    this.readNotificationIds.set(nextIds);
+    this.persistReadNotificationIds(nextIds);
   }
 
   private deduplicateActiveGestiones(
@@ -128,6 +153,7 @@ export class NotificacionTiempoRealService implements OnDestroy {
     return {
       id: gestion.id,
       cuotaId: gestion.cuotaId,
+      leida: this.readNotificationIds().has(gestion.id),
       titulo: this.resolveTitle(gestion),
       detalle: this.resolveDetail(gestion),
       estado: gestion.estadoEnvio,
@@ -195,5 +221,31 @@ export class NotificacionTiempoRealService implements OnDestroy {
     return [...new Set(canales)]
       .map((canal) => (canal === 'CORREO' ? 'Correo' : 'WhatsApp'))
       .join(' + ');
+  }
+
+  private loadReadNotificationIds(): Set<number> {
+    const storedValue = localStorage.getItem(this.readStorageKey);
+
+    if (!storedValue) {
+      return new Set<number>();
+    }
+
+    try {
+      const values = JSON.parse(storedValue) as unknown;
+
+      if (!Array.isArray(values)) {
+        return new Set<number>();
+      }
+
+      return new Set(
+        values.filter((value): value is number => typeof value === 'number'),
+      );
+    } catch {
+      return new Set<number>();
+    }
+  }
+
+  private persistReadNotificationIds(notificationIds: Set<number>): void {
+    localStorage.setItem(this.readStorageKey, JSON.stringify([...notificationIds]));
   }
 }

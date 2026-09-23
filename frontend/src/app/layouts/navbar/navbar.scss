@@ -238,6 +238,10 @@
       border-left-color: var(--cp-danger);
       background: var(--cp-danger-bg);
     }
+
+    &.is-read {
+      opacity: 0.72;
+    }
   }
 
   strong,

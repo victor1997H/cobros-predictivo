@@ -154,9 +154,13 @@
             <ng-container matColumnDef="accion">
               <th mat-header-cell *matHeaderCellDef>Acci&oacute;n</th>
               <td mat-cell *matCellDef="let caso">
-                <a mat-stroked-button [routerLink]="caso.accionRuta">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  (click)="abrirDetalleCaso(caso)"
+                >
                   Ver caso
-                </a>
+                </button>
               </td>
             </ng-container>
 
@@ -200,5 +204,305 @@
         </div>
       </mat-card-content>
     </mat-card>
+  }
+
+  @if (detalleCaso(); as caso) {
+    <div class="case-modal-backdrop" (click)="cerrarDetalleCaso()">
+      <section
+        class="case-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detalle-caso-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="case-modal-header">
+          <div>
+            <p class="eyebrow">Detalle del caso</p>
+            <h3 id="detalle-caso-title">{{ caso.socio }}</h3>
+            <span>Caso de cobranza &middot; Cuota N.&deg; {{ caso.numeroCuota }}</span>
+          </div>
+
+          <button
+            mat-stroked-button
+            type="button"
+            class="modal-close"
+            aria-label="Cerrar detalle del caso"
+            (click)="cerrarDetalleCaso()"
+          >
+            &times;
+          </button>
+        </header>
+
+        <section class="case-resume-grid" aria-label="Resumen del caso">
+          <article>
+            <span>Estado del caso</span>
+            <strong>{{ estadoCaso(caso) }}</strong>
+          </article>
+          <article>
+            <span>Nivel de riesgo</span>
+            <strong
+              class="risk-value"
+              [class.bajo]="caso.nivelRiesgo === 'BAJO'"
+              [class.medio]="caso.nivelRiesgo === 'MEDIO'"
+              [class.alto]="caso.nivelRiesgo === 'ALTO'"
+              [class.critico]="caso.nivelRiesgo === 'CRITICO'"
+            >
+              {{ caso.riesgoTexto }}
+            </strong>
+          </article>
+          <article>
+            <span>Saldo pendiente</span>
+            <strong>{{ caso.saldoPendienteTexto }}</strong>
+          </article>
+          <article>
+            <span>D&iacute;as de mora</span>
+            <strong>{{ caso.diasMoraTexto }}</strong>
+          </article>
+          <article>
+            <span>Cuota relacionada</span>
+            <strong>N.&deg; {{ caso.numeroCuota }}</strong>
+          </article>
+          <article>
+            <span>&Uacute;ltima gesti&oacute;n</span>
+            <strong>{{ caso.ultimaGestionTexto }}</strong>
+          </article>
+          @if (ultimaGestionDetalleCaso()?.alertaInterna?.accionRecomendada; as accion) {
+            <article class="wide">
+              <span>Pr&oacute;xima acci&oacute;n</span>
+              <strong>{{ accion }}</strong>
+            </article>
+          }
+        </section>
+
+        <nav class="case-detail-tabs" aria-label="Secciones del detalle">
+          @for (seccion of detalleSecciones; track seccion.value) {
+            <button
+              type="button"
+              [class.active]="detalleSeccionActiva() === seccion.value"
+              (click)="setDetalleSeccion(seccion.value)"
+            >
+              {{ seccion.label }}
+            </button>
+          }
+        </nav>
+
+        <div class="case-detail-body">
+          @if (detalleSeccionActiva() === 'resumen') {
+            <section class="detail-section">
+              <h4>Resumen</h4>
+              <div class="detail-grid">
+                <article>
+                  <span>Socio</span>
+                  <strong>{{ caso.socio }}</strong>
+                </article>
+                @if (caso.identificacion) {
+                  <article>
+                    <span>Identificaci&oacute;n</span>
+                    <strong>{{ caso.identificacion }}</strong>
+                  </article>
+                }
+                @if (caso.email) {
+                  <article>
+                    <span>Correo</span>
+                    <strong>{{ caso.email }}</strong>
+                  </article>
+                }
+                @if (caso.telefono) {
+                  <article>
+                    <span>Tel&eacute;fono</span>
+                    <strong>{{ caso.telefono }}</strong>
+                  </article>
+                }
+                <article>
+                  <span>Cuota</span>
+                  <strong>N.&deg; {{ caso.numeroCuota }}</strong>
+                </article>
+                <article>
+                  <span>Saldo de cuota</span>
+                  <strong>{{ caso.saldoPendienteTexto }}</strong>
+                </article>
+                <article>
+                  <span>Fecha de vencimiento</span>
+                  <strong>{{ caso.fechaVencimientoTexto }}</strong>
+                </article>
+                <article>
+                  <span>Categor&iacute;a</span>
+                  <strong>{{ caso.categoriaReferenciaTexto }}</strong>
+                </article>
+                <article>
+                  <span>Canal de &uacute;ltima gesti&oacute;n</span>
+                  <strong>{{ caso.canalTexto }}</strong>
+                </article>
+              </div>
+            </section>
+          } @else if (detalleSeccionActiva() === 'deuda') {
+            <section class="detail-section">
+              <h4>Deuda</h4>
+              <div class="detail-grid">
+                <article>
+                  <span>Pr&eacute;stamo relacionado</span>
+                  <strong>{{ caso.prestamoId }}</strong>
+                </article>
+                @if (prestamoDetalleCaso(); as prestamo) {
+                  <article>
+                    <span>Monto original</span>
+                    <strong>{{ formatMoney(prestamo.monto) }}</strong>
+                  </article>
+                  <article>
+                    <span>Total de cuotas</span>
+                    <strong>{{ prestamo.numeroCuotas }}</strong>
+                  </article>
+                  <article>
+                    <span>Inicio del pr&eacute;stamo</span>
+                    <strong>{{ formatDate(prestamo.fechaInicio) }}</strong>
+                  </article>
+                }
+                <article>
+                  <span>Saldo pendiente del pr&eacute;stamo</span>
+                  <strong>{{ caso.saldoPrestamoTexto }}</strong>
+                </article>
+                <article>
+                  <span>Monto vencido del caso</span>
+                  <strong>{{ caso.diasMora > 0 ? caso.saldoPendienteTexto : formatMoney(0) }}</strong>
+                </article>
+                <article>
+                  <span>Cuota actual</span>
+                  <strong>N.&deg; {{ caso.numeroCuota }}</strong>
+                </article>
+                <article>
+                  <span>Valor de cuota</span>
+                  <strong>{{ caso.montoCuotaTexto }}</strong>
+                </article>
+                <article>
+                  <span>Pagado en la cuota</span>
+                  <strong>{{ caso.totalPagadoCuotaTexto }}</strong>
+                </article>
+                <article>
+                  <span>Cuotas vencidas del pr&eacute;stamo</span>
+                  <strong>{{ cuotasVencidasPrestamo(caso) }}</strong>
+                </article>
+                <article>
+                  <span>Fecha desde mora</span>
+                  <strong>{{ caso.diasMora > 0 ? caso.fechaVencimientoTexto : 'Sin mora' }}</strong>
+                </article>
+              </div>
+
+              <div class="classification-box">
+                <span>Motivo de clasificaci&oacute;n</span>
+                <p>{{ motivoClasificacion(caso) }}</p>
+              </div>
+            </section>
+          } @else if (detalleSeccionActiva() === 'gestiones') {
+            <section class="detail-section">
+              <h4>Gestiones</h4>
+              @if (gestionesDetalleCaso().length === 0) {
+                <p class="empty-inline">No existen gestiones registradas para este caso.</p>
+              } @else {
+                <div class="timeline-list">
+                  @for (gestion of gestionesDetalleCaso(); track gestion.id) {
+                    <article class="timeline-item">
+                      <div>
+                        <strong>{{ gestion.accion }}</strong>
+                        <span>{{ formatDateTime(gestion.createdAt) }}</span>
+                      </div>
+                      <p>{{ gestion.mensaje }}</p>
+                      <div class="timeline-meta">
+                        <span>{{ gestion.tipoGestion }}</span>
+                        <span>{{ formatCanales(gestion.canalesSolicitados) }}</span>
+                        <span>{{ estadoEnvioTexto(gestion) }}</span>
+                        @if (gestion.alertaInterna?.requiereIntervencionHumana) {
+                          <span>Requiere intervenci&oacute;n</span>
+                        }
+                      </div>
+                      @if (resultadosGestion(gestion).length > 0) {
+                        <div class="result-list">
+                          @for (resultado of resultadosGestion(gestion); track resultado.canal + resultado.fecha) {
+                            <span>{{ resultado.canal === 'CORREO' ? 'Correo' : 'WhatsApp' }}: {{ resultado.estado }}</span>
+                          }
+                        </div>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          } @else if (detalleSeccionActiva() === 'pagos') {
+            <section class="detail-section">
+              <h4>Pagos</h4>
+              @if (pagosDetalleCaso().length === 0) {
+                <p class="empty-inline">No existen pagos registrados para este caso.</p>
+              } @else {
+                <div class="payment-list">
+                  @for (pago of pagosDetalleCaso(); track pago.pago.id) {
+                    <article class="payment-item">
+                      <div>
+                        <strong>{{ formatMoney(pago.pago.monto) }}</strong>
+                        <span>{{ formatDate(pago.pago.fechaPago) }}</span>
+                      </div>
+                      <div>
+                        <span>Cuota N.&deg; {{ pago.cuota.numeroCuota }}</span>
+                        <span>{{ metodoPagoTexto(pago.pago.metodoPago) }}</span>
+                      </div>
+                      @if (pago.pago.referencia) {
+                        <p>Referencia: {{ pago.pago.referencia }}</p>
+                      }
+                      @if (pago.pago.observacion) {
+                        <p>Observaci&oacute;n: {{ pago.pago.observacion }}</p>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          } @else {
+            <section class="detail-section">
+              <h4>Contacto</h4>
+              <div class="detail-grid">
+                @if (caso.email) {
+                  <article>
+                    <span>Correo</span>
+                    <strong>{{ caso.email }}</strong>
+                  </article>
+                }
+                @if (caso.telefono) {
+                  <article>
+                    <span>Tel&eacute;fono</span>
+                    <strong>{{ caso.telefono }}</strong>
+                  </article>
+                  <article>
+                    <span>WhatsApp</span>
+                    <strong>{{ caso.telefono }}</strong>
+                  </article>
+                }
+                @if (ultimaGestionDetalleCaso(); as ultimaGestion) {
+                  <article>
+                    <span>&Uacute;ltimo contacto</span>
+                    <strong>{{ formatDateTime(ultimaGestion.createdAt) }}</strong>
+                  </article>
+                  <article>
+                    <span>Canal</span>
+                    <strong>{{ formatCanales(ultimaGestion.canalesSolicitados) }}</strong>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+        </div>
+
+        <footer class="case-modal-actions">
+          <button mat-stroked-button type="button" (click)="cerrarDetalleCaso()">
+            Cerrar
+          </button>
+          <a
+            mat-flat-button
+            color="primary"
+            [routerLink]="caso.accionRuta"
+            [queryParams]="{ cuotaId: caso.cuotaId }"
+          >
+            Ir a cobros
+          </a>
+        </footer>
+      </section>
+    </div>
   }
 </section>

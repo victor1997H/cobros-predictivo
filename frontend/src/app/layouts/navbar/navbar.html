@@ -52,6 +52,7 @@
                   <button
                     type="button"
                     class="notification-item"
+                    [class.is-read]="notificacion.leida"
                     [class.alert-high]="notificacion.tipoAlerta === 'ALERTA_ALTO'"
                     [class.alert-critical]="notificacion.tipoAlerta === 'ALERTA_CRITICA'"
                     (click)="openNotificationCase(notificacion)"

@@ -174,6 +174,7 @@ export class Navbar implements OnInit {
   }
 
   openNotificationCase(notificacion: NotificacionSistema): void {
+    this.notificacionService.markAsRead(notificacion.id);
     this.closeNotifications();
 
     void this.router.navigate(['/configuracion'], {

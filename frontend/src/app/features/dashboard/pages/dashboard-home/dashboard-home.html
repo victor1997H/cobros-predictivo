@@ -1,40 +1,16 @@
 <section class="dashboard-page">
-  @if (currentUser$ | async; as currentUser) {
-    <header class="page-header">
-      <div>
-        <h2>Bienvenido, {{ currentUser.nombre }}</h2>
-        <p>{{ currentUser.email }}</p>
-      </div>
-    </header>
-  }
-
   @if (errorMessage()) {
     <p class="alert error">{{ errorMessage() }}</p>
   }
 
   <div class="cards">
     <div class="card">
-      <span>Total clientes</span>
-      <h1>{{ totalClientes() }}</h1>
-    </div>
-
-    <div class="card">
       <span>Saldo en gesti&oacute;n</span>
       <h1>{{ formatCurrency(saldoEnGestion()) }}</h1>
     </div>
 
-    <div class="card danger">
-      <span>Riesgo cr&iacute;tico</span>
-      <h1>{{ riesgoCritico() }}</h1>
-    </div>
-
-    <div class="card warning">
-      <span>Alertas operador</span>
-      <h1>{{ alertasOperador() }}</h1>
-    </div>
-
     <div class="card">
-      <span>Total recaudado</span>
+      <span>Recaudado del per&iacute;odo</span>
       <h1>{{ formatCurrency(totalRecaudado()) }}</h1>
     </div>
 
@@ -43,43 +19,46 @@
       <h1>{{ cuotasVencidas() }}</h1>
     </div>
 
-    <div class="card">
-      <span>Gestiones n8n</span>
-      <h1>{{ gestiones().length }}</h1>
-    </div>
-
     <div class="card danger">
-      <span>Intervenci&oacute;n humana</span>
-      <h1>{{ intervencionesHumanas() }}</h1>
+      <span>Riesgo cr&iacute;tico</span>
+      <h1>{{ riesgoCritico() }}</h1>
     </div>
   </div>
 
-  <div class="content-grid">
-    <div class="table-card">
-      <h3>&Uacute;ltimos clientes</h3>
+  <div class="dashboard-sections">
+    <section class="table-card priority-card">
+      <header>
+        <div>
+          <h3>Casos prioritarios</h3>
+          <p>Clientes que requieren revisi&oacute;n seg&uacute;n mora y nivel de riesgo.</p>
+        </div>
+      </header>
 
       @if (isLoading()) {
         <p class="empty">Cargando informaci&oacute;n...</p>
-      } @else if (ultimosClientes().length === 0) {
-        <p class="empty">No existen clientes registrados.</p>
+      } @else if (casosPrioritarios().length === 0) {
+        <div class="empty-state">
+          <strong>Todo al d&iacute;a</strong>
+          <span>No hay casos que necesiten atenci&oacute;n en este momento.</span>
+        </div>
       } @else {
-        <table>
+        <table class="priority-table">
           <thead>
             <tr>
               <th>Cliente</th>
-              <th>Email</th>
-              <th>Estado</th>
+              <th>Situaci&oacute;n</th>
+              <th>Prioridad</th>
             </tr>
           </thead>
 
           <tbody>
-            @for (cliente of ultimosClientes(); track cliente.id) {
+            @for (caso of casosPrioritarios(); track caso.id) {
               <tr>
-                <td>{{ fullName(cliente) }}</td>
-                <td>{{ cliente.email }}</td>
+                <td>{{ caso.cliente }}</td>
+                <td>{{ caso.situacion }}</td>
                 <td>
-                  <span class="status" [class.inactive]="!cliente.estado">
-                    {{ cliente.estado ? 'Activo' : 'Inactivo' }}
+                  <span class="priority-badge {{ riskClass(caso.nivelRiesgo) }}">
+                    {{ caso.prioridad }}
                   </span>
                 </td>
               </tr>
@@ -87,35 +66,40 @@
           </tbody>
         </table>
       }
-    </div>
+    </section>
 
-    <div class="activity-card">
-      <h3>&Uacute;ltimas gestiones n8n</h3>
+    <section class="table-card risk-summary-card">
+      <h3>Resumen de riesgo</h3>
+      <p>Distribuci&oacute;n de clientes por nivel de riesgo.</p>
 
       @if (isLoading()) {
-        <p>Cargando actividad...</p>
-      } @else if (ultimasGestiones().length === 0) {
-        <p>No existen gestiones registradas.</p>
+        <p class="empty">Calculando distribuci&oacute;n...</p>
       } @else {
-        <div class="activity-list">
-          @for (gestion of ultimasGestiones(); track gestion.id) {
-            <article
-              [class.alert-high]="gestion.alertaInterna?.tipo === 'ALERTA_ALTO'"
-              [class.alert-critical]="gestion.alertaInterna?.tipo === 'ALERTA_CRITICA'"
-            >
-              <strong>{{ gestion.clienteNombre }}</strong>
-              <span>{{ gestion.accion }}</span>
-              @if (gestion.alertaInterna) {
-                <em>{{ alertaOperadorLabel(gestion) }}</em>
-              }
-              <small>
-                {{ gestion.nivelRiesgo }} &middot;
-                {{ categoriaReferenciaLabel(gestion) }} &middot; {{ gestion.estadoEnvio }}
-              </small>
+        <div class="risk-summary">
+          @for (item of resumenRiesgo(); track item.nivel) {
+            <article class="risk-row">
+              <div>
+                <strong>{{ item.etiqueta }}</strong>
+                <span>{{ item.cantidad }} cliente(s)</span>
+              </div>
+
+              <div class="risk-bar">
+                <div class="risk-track">
+                  <span
+                    class="risk-fill {{ riskClass(item.nivel) }}"
+                    [style.width.%]="item.porcentaje"
+                  ></span>
+                </div>
+                <small>{{ item.porcentaje }}%</small>
+              </div>
             </article>
           }
         </div>
+
+        @if (totalClientesClasificados() === 0) {
+          <p class="empty">No existen clientes clasificados por riesgo.</p>
+        }
       }
-    </div>
+    </section>
   </div>
 </section>

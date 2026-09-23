@@ -40,6 +40,7 @@ describe('Navbar', () => {
     errorMessage: notificationsError,
     start: vi.fn(),
     refresh: vi.fn(),
+    markAsRead: vi.fn(),
   };
 
   const themeService = {
@@ -54,6 +55,7 @@ describe('Navbar', () => {
     notificationsError.set('');
     notificationService.start.mockClear();
     notificationService.refresh.mockClear();
+    notificationService.markAsRead.mockClear();
     authService.clearSession.mockClear();
     authService.forgotPassword.mockClear();
     themeService.toggleMode.mockClear();
@@ -121,6 +123,7 @@ describe('Navbar', () => {
       {
         id: 50,
         cuotaId: 15,
+        leida: false,
         titulo: 'Alerta urgente',
         detalle: 'Socio Prueba - 120 dias de mora',
         estado: 'ENVIADO',
@@ -144,6 +147,7 @@ describe('Navbar', () => {
 
     notification.click();
 
+    expect(notificationService.markAsRead).toHaveBeenCalledWith(50);
     expect(navigateSpy).toHaveBeenCalledWith(['/configuracion'], {
       queryParams: { cuotaId: 15 },
     });
